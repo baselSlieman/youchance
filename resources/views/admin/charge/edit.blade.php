@@ -42,11 +42,29 @@
             </div>
 
 
-            <input type="submit" class="btn btn-primary" value="Save" />
-            <a  class="btn btn-primary" href="{{route('charges.index')}}">Back</a>
-
-
+            <input type="submit" class="btn btn-success me-3" value="Save" /> |
+            <a  class="btn btn-primary mx-3" href="{{route('charges.index')}}">Back</a> |
+            <button type="button" class="btn btn-danger ms-3" data-bs-toggle="modal" data-bs-target="#exampleModal">Delete</button>
             </from>
+            <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Delete Charge:</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    <p>Are you sure you want to delete this item?</p>
+                </div>
+                <div class="modal-footer" id="mfooter">
+                    <form method="POST" class="d-inline-block" action="{{ route("charges.destroy",$charge) }}">@csrf @method('DELETE') <button type="submit" class="btn btn-danger me-3"><i class="fas fa-trash me-1"></i>Confirm</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></form>
+                </div>
+            </div>
+        </div>
+    </div>
     </div>
 
 @endsection

@@ -1,10 +1,7 @@
 <?php
-
 namespace App\Models;
-
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
 class Withdraw extends Model
 {
     protected $fillable = [
@@ -13,7 +10,9 @@ class Withdraw extends Model
         "chat_id",
         "finalAmount",
         "discountAmount",
-        "status"
+        "status",
+        "subscriber",
+        "method"
     ];
 
     public function chat():BelongsTo

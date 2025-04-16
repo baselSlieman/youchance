@@ -30,6 +30,7 @@
 
     <!-- Template Stylesheet -->
     <link href="{{asset('dashboard/css/style.css')}}" rel="stylesheet">
+    @livewireStyles
 </head>
 
 <body>
@@ -46,7 +47,7 @@
         <!-- Sidebar Start -->
         <div class="sidebar pe-4 pb-3">
             <nav class="navbar bg-light navbar-light">
-                <a href="index.html" class="navbar-brand mx-4 mb-3">
+                <a href="{{route('admin_dashboard')}}" class="navbar-brand mx-4 mb-3">
                     <h3 class="text-primary"><i class="fas fa-robot me-1"></i></i>YOUCHANCE</h3>
                 </a>
                 <div class="d-flex align-items-center ms-4 mb-4">
@@ -60,7 +61,7 @@
                     </div>
                 </div>
                 <div class="navbar-nav w-100">
-                    <a href="index.html" class="nav-item nav-link active"><i class="fa fa-tachometer-alt me-2"></i>Dashboard</a>
+                    <a href="{{route('admin_dashboard')}}" class="nav-item nav-link active"><i class="fa fa-tachometer-alt me-2"></i>Dashboard</a>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fab fa-telegram me-2"></i> Telegram</a>
                         <div class="dropdown-menu bg-transparent border-0">
@@ -205,7 +206,7 @@
         <!-- Back to Top -->
         <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
     </div>
-
+    @livewireScripts
     <!-- JavaScript Libraries -->
     {{-- <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script> --}}
     <script
@@ -224,6 +225,7 @@
 
     <!-- Template Javascript -->
     <script src="{{asset('dashboard/js/main.js')}}"></script>
+
 </body>
 
 </html>

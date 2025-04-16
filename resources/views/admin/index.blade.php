@@ -13,8 +13,8 @@
                 <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
                     <i class="fa fa-chart-line fa-3x text-primary"></i>
                     <div class="ms-3">
-                        <p class="mb-2">Today Sale</p>
-                        <h6 class="mb-0">$1234</h6>
+                        <p class="mb-2">Today Chats</p>
+                        <h6 class="mb-0">{{$chats_today_count}}/{{$chats_count}}</h6>
                     </div>
                 </div>
             </div>
@@ -22,8 +22,8 @@
                 <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
                     <i class="fa fa-chart-bar fa-3x text-primary"></i>
                     <div class="ms-3">
-                        <p class="mb-2">Total Sale</p>
-                        <h6 class="mb-0">$1234</h6>
+                        <p class="mb-2">Today Charges</p>
+                        <h6 class="mb-0">{{$charges_today_count}}/{{$charges_count}}</h6>
                     </div>
                 </div>
             </div>
@@ -31,8 +31,8 @@
                 <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
                     <i class="fa fa-chart-area fa-3x text-primary"></i>
                     <div class="ms-3">
-                        <p class="mb-2">Today Revenue</p>
-                        <h6 class="mb-0">$1234</h6>
+                        <p class="mb-2">Today Withdraws</p>
+                        <h6 class="mb-0">{{$withdraws_today_count}}/{{$withdraws_count}}</h6>
                     </div>
                 </div>
             </div>
@@ -40,8 +40,8 @@
                 <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
                     <i class="fa fa-chart-pie fa-3x text-primary"></i>
                     <div class="ms-3">
-                        <p class="mb-2">Total Revenue</p>
-                        <h6 class="mb-0">$1234</h6>
+                        <p class="mb-2">Today iChancy</p>
+                        <h6 class="mb-0">{{$ichancy_today_count}}</h6>
                     </div>
                 </div>
             </div>

@@ -1,12 +1,9 @@
 <?php
-
 namespace App\Http\Controllers;
-
 use App\Models\Chat;
 use App\Models\Withdraw;
 use Illuminate\Http\Request;
 use Telegram\Bot\Laravel\Facades\Telegram;
-
 class WithdrawController extends Controller
 {
     /**
@@ -14,8 +11,12 @@ class WithdrawController extends Controller
      */
     public function index()
     {
-        $withdraws = Withdraw::query()->orderBy('created_at')->with('chat')->paginate(5);
-        return view("admin.withdraw.index",compact('withdraws'));
+        // $withdraws = Withdraw::query()
+        // ->orderByRaw("status = 'requested' DESC, created_at DESC")
+        // ->with('chat')
+        // ->paginate(10);
+        // return view("admin.withdraw.index",compact('withdraws'));
+        return view("admin.withdraw.index");
     }
     public function rejectOrder(Request $request,Withdraw $withdraw){
         $withdraw->status="rejected";

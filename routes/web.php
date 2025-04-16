@@ -8,7 +8,12 @@ use App\Http\Controllers\admin\ChatController;
 use App\Http\Controllers\admin\IchancyController;
 use App\Http\Controllers\WithdrawController;
 use App\Models\Category;
+use App\Models\Charge;
+use App\Models\Chat;
+use App\Models\Ichancy;
 use App\Models\Product;
+use App\Models\Withdraw;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -40,6 +45,7 @@ Route::middleware(['auth','admin'])->group(function(){
     Route::resource("chats",ChatController::class)->missing(function (Request $request) {
         return Redirect::route('chats.index');
     });
+    Route::get("/ichancies/ichancy_transaction/{type}",[IchancyController::class,"ichancy_transaction"])->name('ichancies.ichancy_transaction');
     Route::resource("ichancies",IchancyController::class)->missing(function (Request $request) {
         return Redirect::route('ichancies.index');
     });
@@ -47,7 +53,19 @@ Route::middleware(['auth','admin'])->group(function(){
         return Redirect::route('charges.index');
     });
     Route::get('/admin/dashboard', function () {
-        return view('admin.index');
+        $chats = Chat::query();
+        $chats_count = $chats->count();
+        $chats_today_count= $chats->whereDate('created_at', Carbon::today())->count();
+
+        $charges = Charge::query();
+        $charges_count = $charges->count();
+        $charges_today_count= $charges->whereDate('created_at', Carbon::today())->count();
+
+        $withdraws = Withdraw::query();
+        $withdraws_count = $withdraws->count();
+        $withdraws_today_count= $withdraws->whereDate('created_at', Carbon::today())->count();
+        $ichancy_today_count= Ichancy::query()->whereDate('created_at', Carbon::today())->count();
+        return view('admin.index',compact('chats_count','chats_today_count','charges_count','charges_today_count','withdraws_count','withdraws_today_count','ichancy_today_count'));
     })->name('admin_dashboard');
 });
 

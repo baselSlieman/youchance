@@ -10,6 +10,8 @@ use App\Models\Ichancy;
 use App\Models\IchTransaction;
 use App\Models\Withdraw;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+// use GuzzleHttp\RequestOptions;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\Request;
@@ -48,7 +50,8 @@ class TelegramController extends Controller
         $form = Validator::make($request->all(),[
                 "amount"=>"required|numeric",
                 "processid"=>"required|numeric",
-                "chat_id"=>"required"
+                "chat_id"=>"required",
+                "method"=>"required"
         ],[
             "numeric"=>"الرجاء إدخال قيم صحيحة"
         ]);
@@ -66,8 +69,10 @@ class TelegramController extends Controller
             }
         }
         ///////
-        $client = new Client();
 
+        // $client = new Client(['proxy' => 'http://uc28a3ecf573f05d0-zone-custom-region-sy-asn-AS29256:uc28a3ecf573f05d0@43.153.237.55:2334']);
+        $client = new Client();
+        try{
         $response = $client->request('POST', 'https://cash-api.syriatel.sy/Wrapper/app/7/SS2MTLGSM/ePayment/customerHistory', [
             'headers' => [
                 'Content-Type' => 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -78,7 +83,9 @@ class TelegramController extends Controller
             ],
             'body' => 'appVersion=5.5.2&pageNumber=1&searchGsmOrSecret=&type=2&systemVersion=Android%2Bv11&deviceId=ffffffff-fa8d-e3ca-ffff-ffffef05ac4a&userId=1657180&sortType=1&mobileManufaturer=samsung&mobileModel=SM-A505F&channelName=4&lang=0&hash=cd939479d1e2c5e0dfb93b428825a77e467c1c890131508fe85199c6e6f6ed07&status=1'
         ]);
-
+    }catch(GuzzleException $e){
+        return response()->json(["status"=>"failedsy","message"=>"فشلت التحقق الآلي من عملية الدفع، الرجاء إعادة المحاولة"]);
+    }
         $body = json_decode($response->getBody()->getContents());
         if($body->code==1){
                 $data =  $body->data->data;
@@ -273,7 +280,7 @@ class TelegramController extends Controller
         $form['discountAmount']=$discountAmount;
         $withdraw = Withdraw::create($form);
         if($withdraw){
-            return response()->json(["status"=>"success","message"=>"تم طلب السحب بنجاح\nسيتم إعلامك بتنفيذ الطلب خلال ساعة\nمعلومات الطلب:\n\nرقم الطلب: ".$withdraw->id."\nالطلب: ".$withdraw->code."\nالقيمة: ".$withdraw->amount."\nنسبة الاقتطاع: 10%\nالمبلغ المقتطع: ".$withdraw->discountAmount."\nالقيمة المستحقة بعد الاقتطاع: ".$withdraw->finalAmount."\nمعرف المستخدم: ".$withdraw->chat_id."","withdrawId"=>$withdraw->id]);
+            return response()->json(["status"=>"success","message"=>"✅ تم طلب السحب بنجاح\nسيتم إعلامك بتنفيذ الطلب خلال ساعة\nمعلومات الطلب:\n\nرقم الطلب: ".$withdraw->id."\nالطلب: ".$withdraw->code."\nالقيمة: ".$withdraw->amount."\nنسبة الاقتطاع: 10%\nالمبلغ المقتطع: ".$withdraw->discountAmount."\nالقيمة المستحقة بعد الاقتطاع: ".$withdraw->finalAmount."\nمعرف المستخدم: ".$withdraw->chat_id."\nطريقة السحب: ".$withdraw->method,"withdrawId"=>$withdraw->id]);
         }else{
             return response()->json(["status"=>"failed","message"=>"حدث خطأ أثناء معالجة الطلب، الرجاء المحاولة في وقت لاحق"]);
         }
@@ -562,16 +569,18 @@ class TelegramController extends Controller
             return response()->json(["status"=>"failed","message"=>"حدث خطأ أثناء الطلب الرجاء المحاولة مرة أخرى"]);
         }
     }
+
     public function checkbalance(Request $request)
     {
         $form =$request->chat_id;
         $chat = Chat::find($form);
-        if($chat["balance"]>10000){
+        if($chat["balance"]>=10000){
             return response()->json(["status"=>"success"]);
         }else{
             return response()->json(["status"=>"failed"]);
         }
     }
+
     public function ichancy(Request $request)
     {
         $form = Validator::make($request->all(),[

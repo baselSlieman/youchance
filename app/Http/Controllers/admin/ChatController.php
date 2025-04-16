@@ -14,8 +14,7 @@ class ChatController extends Controller
      */
     public function index()
     {
-        $chats = Chat::query()->orderBy('created_at')->paginate(5);
-        return view("admin.chat.index",compact('chats'));
+        return view("admin.chat.index");
     }
 
     /**
@@ -73,6 +72,7 @@ class ChatController extends Controller
      */
     public function destroy(Chat $chat)
     {
-        //
+        $chat->delete();
+        return redirect()->route('chats.index')->with('success','Chat deleted successfully');
     }
 }

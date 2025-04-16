@@ -15,8 +15,7 @@ class ChargeController extends Controller
      */
     public function index()
     {
-        $charges = Charge::query()->orderBy('created_at', 'desc')->with('chat')->paginate(5);
-        return view("admin.charge.index",compact('charges'));
+        return view("admin.charge.index");
     }
 
     /**
@@ -86,6 +85,7 @@ class ChargeController extends Controller
      */
     public function destroy(Charge $charge)
     {
-        //
+        $charge->delete();
+        return redirect()->route('charges.index')->with('success','Charge deleted successfully');
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Ichancy;
+use App\Models\IchTransaction;
 use Illuminate\Http\Request;
 
 class IchancyController extends Controller
@@ -13,8 +14,18 @@ class IchancyController extends Controller
      */
     public function index()
     {
-        $ichancies = Ichancy::query()->orderBy('created_at', 'desc')->with('chat')->paginate(5);
-        return view("admin.ichancy.index",compact('ichancies'));
+        return view("admin.ichancy.index");
+    }
+
+    public function ichancy_transaction(Request $request,$type)
+    {
+        $id = $request->get('ichancyid');
+        $ichancyTrans = IchTransaction::query();
+        if(isset($id)){
+            $ichancyTrans->where("ichancy_id",$id);
+        }
+        $ichancyTransRes = $ichancyTrans->where("type",$type)->orderBy('created_at', 'desc')->with('ichancy')->paginate(5);
+        return view("admin.ichancy.ichancy_transactions",compact('ichancyTransRes','type'));
     }
 
     /**

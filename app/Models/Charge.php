@@ -11,7 +11,8 @@ class Charge extends Model
         "amount",
         "processid",
         "chat_id",
-        "status"
+        "status",
+        "method"
     ];
 
     public function chat():BelongsTo

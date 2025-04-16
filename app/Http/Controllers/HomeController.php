@@ -45,6 +45,8 @@ class HomeController extends Controller
     }
     public function test()
     {
+
+        return view('welcome');
         //subqueries/////////////////
         //subqueries 1: allows you to pull information from related tables in a single query
         // dd(
