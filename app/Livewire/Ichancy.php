@@ -37,7 +37,7 @@ class Ichancy extends Component
         $ichancyBalance=null;
         $playerId = $identifier;
         $client = new Client();
-        $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=1374816bc9c64b2d79435cf680c4225f;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
+        $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=aa2ab69ccb1f2b68fca02aef93d66142;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
         $pass = false;
         do{
             $response2 = $client->request('POST', 'https://agents.ichancy.com/global/api/Player/getPlayerBalanceById', [
@@ -78,7 +78,7 @@ class Ichancy extends Component
                 'accept-encoding'=>'gzip, deflate, br',
                 'accept-language'=> 'ar-AE,ar;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6'
             ],
-            'body' => '{"username": "Slameh@agent.nsp","password": "Sla@@2023"}'
+            'body' => '{"username": "Brhoom@agent.nsp","password": "Bas889@@"}'
             ]);
             $incom_cookies = $response->getHeader('Set-Cookie');
             $cookies='';

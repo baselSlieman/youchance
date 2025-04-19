@@ -20,7 +20,7 @@ class Charge extends Component
                 $query->where('username', 'like', '%' . $this->search . '%')->orWhere('id', $this->search);
             })->orWhere('processid',$this->search);
         })
-        ->orderByRaw("status = 'complete' DESC, created_at DESC")
+        ->orderByRaw("status = 'pending' DESC, created_at DESC")
         ->with('chat')
         ->paginate(10);
 
