@@ -46,6 +46,7 @@ Route::middleware(['auth','admin'])->group(function(){
         return Redirect::route('chats.index');
     });
     Route::get("/ichancies/ichancy_transaction/{type}",[IchancyController::class,"ichancy_transaction"])->name('ichancies.ichancy_transaction');
+    Route::get("/ichancies/exec_ichancy_charge/{transacion}",[IchancyController::class,"exec_ichancy_charge"])->name('ichancies.exec_ichancy_charge');
     Route::resource("ichancies",IchancyController::class)->missing(function (Request $request) {
         return Redirect::route('ichancies.index');
     });

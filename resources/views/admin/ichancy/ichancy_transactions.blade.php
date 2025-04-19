@@ -64,8 +64,12 @@
                                         @case("complete")<i class="far fa-check-circle text-success"></i>@break
                                         @case("requested")<i class="far fa-hourglass text-primary"></i>@break
                                         @default
+                                        @endswitch {{$ichancytr->status}}
+                                    </p>
+                                    @if ($ichancytr->status=="requested")
+                                        <p class="text-center"><a href="{{route('ichancies.exec_ichancy_charge',$ichancytr)}}" class="btn btn-success"><i class="fas fa-play"></i></a></p>
+                                    @endif
 
-                                    @endswitch {{$ichancytr->status}}</p>
                                 </td>
 
 

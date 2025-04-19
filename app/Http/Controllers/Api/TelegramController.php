@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Validator;
 use GuzzleHttpClient;
 use Illuminate\Support\Str;
 use Mockery\Generator\StringManipulation\Pass\Pass;
+use Telegram\Bot\Laravel\Facades\Telegram;
 
 class TelegramController extends Controller
 {
@@ -45,6 +46,55 @@ class TelegramController extends Controller
         return response()->json(["status"=>"success","chat"=>$chat]);
     }
 
+
+    public function chargeBemo(Request $request)
+    {
+        $form = Validator::make($request->all(),[
+                "amount"=>"required|numeric",
+                "processid"=>"required|numeric",
+                "chat_id"=>"required",
+                "method"=>"required"
+        ],[
+            "numeric"=>"الرجاء إدخال قيم صحيحة"
+        ]);
+        if($form->fails()){
+            $errorMessages = $form->errors()->all(); // الحصول على جميع رسائل الخطأ
+            return response()->json(["status"=>"validator","message"=>$errorMessages]);
+        }
+        $form =$form->validate();
+        $checkCharge = Charge::where("processid",$form['processid'])->first();
+        if($checkCharge){
+            if($checkCharge['status']=='complete'){
+                return response()->json(["status"=>"failed","message"=>"عملية التحويل منفّذة مسبقاً، الرجاء إدخال عملية تحويل جديدة"]);
+            }else{
+                return response()->json(["status"=>"failed","message"=>"عملية التحويل موجودة مسبقاً، الرجاء انتظار التنفيذ أو التواصل مع الدعم في حال التأخير"]);
+            }
+        }
+        $charge = Charge::create($form);
+        if($charge){
+            $inlineKeyboard = [
+                [
+                    ['text' => '✅ تنفيذ', 'callback_data' => 'ex_bemo_charge:'.$charge->id],
+                    ['text' => '▶️ متابعة', 'callback_data' => 'pending_bemo_charge:'.$charge->chat->id],
+                    ['text' => '❌ رفض', 'callback_data' => 'reject_bemo_charge:'.$charge->chat->id.':'.$charge->id],
+                ]
+            ];
+            $keyboard = json_encode(['inline_keyboard' => $inlineKeyboard]);
+            $subscribers = [842668006];
+            foreach ($subscribers as $chatId) {
+                $response = Telegram::sendMessage([
+                    'chat_id' => $chatId,
+                    "parse_mode"=>"HTML",
+                    'text' => '🚨 هنالك عملية شحن بيمو:'.PHP_EOL.''.PHP_EOL.'معرف المستخدم: <b><code>'.$charge->chat_id.'</code></b>'.PHP_EOL.'رقم العملية: <b><code>'.$charge->processid.'</code></b> '.PHP_EOL.'المبلغ: <b><code>'.$charge->amount.'</code></b> ل.س'.PHP_EOL.' المحفظة: '.$charge->chat->balance.' NSP'.PHP_EOL.' الوقت: '.$charge->created_at.PHP_EOL.' رقم العملية: '.$charge->id  ,
+                    'reply_markup' => $keyboard,
+                ]);
+            }
+            return response()->json(["status"=>"success","message"=>"🏷 جاري التحقق من عملية الدفع".PHP_EOL."".PHP_EOL."🏷 ستستغرق العملية بضع دقائق".PHP_EOL."".PHP_EOL."🏷 شكراً لانتظارك"]);
+        }else{
+            return response()->json(["status"=>"failed","message"=>"حصل خطأ أثناء تنفيذ العملية"]);
+        }
+    }
+
     public function charge(Request $request)
     {
         $form = Validator::make($request->all(),[
@@ -69,60 +119,77 @@ class TelegramController extends Controller
             }
         }
         ///////
-
+        $bodys =collect([
+            'appVersion=5.5.2&pageNumber=1&searchGsmOrSecret=&type=2&systemVersion=Android%2Bv11&deviceId=ffffffff-fa8d-e3ca-ffff-ffffef05ac4a&userId=1657180&sortType=1&mobileManufaturer=samsung&mobileModel=SM-A505F&channelName=4&lang=0&hash=cd939479d1e2c5e0dfb93b428825a77e467c1c890131508fe85199c6e6f6ed07&status=1',
+            'appVersion=5.5.2&pageNumber=1&searchGsmOrSecret=&type=2&systemVersion=Android%2Bv14&deviceId=00000000-0161-baa6-ffff-ffffef05ac4a&userId=3324251&sortType=1&mobileManufaturer=samsung&mobileModel=SM-A055F&channelName=4&lang=0&hash=4cfd244c5de005d1a80c2121cdbe77728ca4f7cbe9f37bdce5a907cd34cba246&status=2',
+            'appVersion=5.5.2&pageNumber=1&searchGsmOrSecret=&type=2&systemVersion=Android%2Bv14&deviceId=00000000-0161-baa6-ffff-ffffef05ac4a&userId=4763960&sortType=1&mobileManufaturer=samsung&mobileModel=SM-A055F&channelName=4&lang=0&hash=095e21b4fe2375b77a5c3a63a8757918fe9969fd92826932ef878a97a863b313&status=2'
+        ]);
         // $client = new Client(['proxy' => 'http://uc28a3ecf573f05d0-zone-custom-region-sy-asn-AS29256:uc28a3ecf573f05d0@43.153.237.55:2334']);
         $client = new Client();
-        try{
-        $response = $client->request('POST', 'https://cash-api.syriatel.sy/Wrapper/app/7/SS2MTLGSM/ePayment/customerHistory', [
-            'headers' => [
-                'Content-Type' => 'application/x-www-form-urlencoded; charset=UTF-8',
-                'User-Agent' => 'Dalvik/2.1.0 (Linux; U; Android 11; SM-A505F Build/RP1A.200720.012)',
-                'Host' => 'cash-api.syriatel.sy',
-                'Connection' => 'Keep-Alive',
-                'Accept-Encoding' => 'gzip'
-            ],
-            'body' => 'appVersion=5.5.2&pageNumber=1&searchGsmOrSecret=&type=2&systemVersion=Android%2Bv11&deviceId=ffffffff-fa8d-e3ca-ffff-ffffef05ac4a&userId=1657180&sortType=1&mobileManufaturer=samsung&mobileModel=SM-A505F&channelName=4&lang=0&hash=cd939479d1e2c5e0dfb93b428825a77e467c1c890131508fe85199c6e6f6ed07&status=1'
-        ]);
-    }catch(GuzzleException $e){
-        return response()->json(["status"=>"failedsy","message"=>"فشلت التحقق الآلي من عملية الدفع، الرجاء إعادة المحاولة"]);
-    }
-        $body = json_decode($response->getBody()->getContents());
-        if($body->code==1){
-                $data =  $body->data->data;
-                $desiredAmount = $form['amount'];
-                $desiredTransactionNo = $form['processid'];
+        $pass = false;
+        $iter = 0;
+        do{
+            try{
+                $response = $client->request('POST', 'https://cash-api.syriatel.sy/Wrapper/app/7/SS2MTLGSM/ePayment/customerHistory', [
+                    'headers' => [
+                        'Content-Type' => 'application/x-www-form-urlencoded; charset=UTF-8',
+                        'User-Agent' => 'Dalvik/2.1.0 (Linux; U; Android 11; SM-A505F Build/RP1A.200720.012)',
+                        'Host' => 'cash-api.syriatel.sy',
+                        'Connection' => 'Keep-Alive',
+                        'Accept-Encoding' => 'gzip'
+                    ],
+                    'body' => $bodys->get($iter),
+                    'timeout' => 120
+                ]);
 
-                // تحقق من وجود العنصر الذي يحتوي على القيمتين المحددتين
-                $found = false;
-                $matchedAmount = null;
-                foreach ($data as $item) {
-                    if ($item->amount == $desiredAmount && $item->transactionNo == $desiredTransactionNo) {
-                        $found = true;
-                        $matchedAmount = $item->amount;
-                        break;
-                    }
-                }
-                if($found){
-                    $form['status']='complete';
-                    $charge = Charge::create($form);
-                        if($charge){
-                            if($desiredAmount>=5000){
-                                $chat = Chat::find($form['chat_id']);
-                                $chat->balance = $chat->balance +$matchedAmount;
-                                $chat->save();
-                                return response()->json(["status"=>"success","message"=>"شكراً لك، تم شحن رصيدك في البوت بنجاح."]);
-                            }else{
-                                return response()->json(["status"=>"success","message"=>"أقل قيمة للشحن هي 5000 وأي قيمة أقل من 5000 لايمكن شحنها أو استرجاعها"]);
+                $body = json_decode($response->getBody()->getContents());
+
+                if($body->code==1){
+                        $data =  $body->data->data;
+                        $desiredAmount = $form['amount'];
+                        $desiredTransactionNo = $form['processid'];
+
+                        // تحقق من وجود العنصر الذي يحتوي على القيمتين المحددتين
+                        $found = false;
+                        $matchedAmount = null;
+                        foreach ($data as $item) {
+                            if ($item->amount == $desiredAmount && $item->transactionNo == $desiredTransactionNo) {
+                                $found = true;
+                                $matchedAmount = $item->amount;
+                                break;
                             }
-                        }else{
-                                return response()->json(["status"=>"failed","message"=>"حدث خطأ أثناء الطلب الرجاء المحاولة مرة أخرى"]);
                         }
-                }else{
-                    return response()->json(["status"=>"failed","message"=>"عملية الدفع غير صحيحة" ]);
+                        if($found){
+                            $form['status']='complete';
+                            $charge = Charge::create($form);
+                                if($charge){
+                                    if($desiredAmount>=5000){
+                                        $chat = Chat::find($form['chat_id']);
+                                        $chat->balance = $chat->balance +$matchedAmount;
+                                        $chat->save();
+                                        return response()->json(["status"=>"success","message"=>"شكراً لك، تم شحن رصيدك في البوت بنجاح."]);
+                                    }else{
+                                        return response()->json(["status"=>"success","message"=>"أقل قيمة للشحن هي 5000 وأي قيمة أقل من 5000 لايمكن شحنها أو استرجاعها"]);
+                                    }
+                                }else{
+                                        return response()->json(["status"=>"failed","message"=>"حدث خطأ أثناء الطلب الرجاء المحاولة مرة أخرى"]);
+                                }
+                            $pass=true;
+                        }elseif($iter<2){
+                                $iter = $iter+1;
+                        }else{
+                                return response()->json(["status"=>"failed","message"=>"عملية الدفع غير صحيحة" ]);
+                        }
+
                 }
-        }else{
-            return response()->json(["status"=>"failed","message"=>"فشل التحقق من عملية الدفع، الرجاء التواصل مع الدعم" ]);
-        }
+                else{
+                        return response()->json(["status"=>"failed","message"=>"فشل التحقق من عملية الدفع، الرجاء التواصل مع الدعم" ]);
+
+                }
+            }catch(GuzzleException $e){
+                // return response()->json(["status"=>"failedsy","message"=>"فشلت التحقق الآلي من عملية الدفع، الرجاء إعادة المحاولة"]);
+            }
+        }while(!$pass);
     }
 
 
@@ -160,13 +227,189 @@ class TelegramController extends Controller
         $withdraw->status = "canceled";
         $saved = $withdraw->save();
         if($saved){
-           return response()->json(["status"=>"success","message"=>"حدث خطأ أثناء عملية التراجع"]);
+            $subscribers = [842668006,5144738358];
+            foreach ($subscribers as $chatId) {
+                $response = Telegram::sendMessage([
+                    'chat_id' => $chatId,
+                    "parse_mode"=>"HTML",
+                    'text' => '💡إعلام💡:'.PHP_EOL.'قام المشترك <b><code>'.$withdraw->chat_id.'</code></b> بالتراجع عن الطلب.'.PHP_EOL.''.PHP_EOL.'الوقت: '.$withdraw->updated_at.''.PHP_EOL.'رقم الطلب: '.$withdraw->id  ,
+                ]);
+            }
+           return response()->json(["status"=>"success","message"=>"تمت عملية التراجع"]);
         }else{
             return response()->json(["status"=>"failed","message"=>"حدث خطأ أثناء عملية التراجع"]);
         }
     }
 
 
+
+    public function ex_ich_charge(Request $request)
+    {
+        $orderId = $request->orderId;
+        $admin_chat_id = $request->chat_id;
+        $transacion = IchTransaction::find($orderId);
+
+
+        $subscribers = [842668006,5144738358];
+
+        if($transacion->status != 'requested'){
+            return response()->json(["status"=>"requested","message"=>"🔔 تم معالجة الطلب في وقت سابق"]);
+        }
+
+        if($transacion->chat->balance < $transacion->amount){
+            foreach ($subscribers as $chatId) {
+                if($chatId != $admin_chat_id){
+                    $response = Telegram::sendMessage([
+                        'chat_id' => $chatId,
+                        "parse_mode"=>"HTML",
+                        'text' => '❗️النتيجة❗️:'.PHP_EOL.'لايوجد رصيد كافي في محفظة المستخدم لتنفيذ عملية شحن شحاب أيشانسي'.PHP_EOL.'معرف اللاعب:<b><code>'.$transacion->ichancy->identifier.'</code></b>',
+                    ]);
+                }
+            }
+            $response = Telegram::sendMessage([
+                'chat_id' => $transacion->chat_id,
+                "parse_mode"=>"HTML",
+                'text' => '❗️النتيجة❗️:'.PHP_EOL.'لايوجد رصيد كافي في محفظتك لتنفيذ عملية شحن حساب أيشانسي،قد يكون جرى عملية سحب من المحفظة خلال فترة معالجة الطلب',
+            ]);
+            return response()->json(["status"=>"balance","message"=>"لايوجد رصيد كافي في محفظة المستخدم لشحن المبلغ المطلوب"]);
+        }
+        $client = new Client();
+        $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=aa2ab69ccb1f2b68fca02aef93d66142;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
+        $playerId = $transacion->ichancy->identifier;
+        $pass = false;
+        do{
+            $response2 = $client->request('POST', 'https://agents.ichancy.com/global/api/Player/depositToPlayer', [
+        'headers' => [
+            'Content-Type' => 'application/json',
+            'User-Agent' => ' Mozilla/5.0 (Linux; Android 11; SAMSUNG SM-A505F) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/20.0 Chrome/106.0.5249.126 Mobile Safari/537.36',
+            'Accept-Encoding' => 'gzip,deflate,br',
+            'Accept' => '*/*',
+            'dnt'=> '1',
+            'origin'=>'https://agents.ichancy.com',
+            'sec-fetch-site: same-origin',
+            'sec-fetch-mode: cors',
+            'sec-fetch-dest: empty',
+            'accept-encoding'=>'gzip, deflate, br',
+            'accept-language'=> 'ar-AE,ar;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6',
+            'cookie' => $cookies,
+        ],
+        'body' => '{"amount":'.$transacion->amount.',"comment":null,"playerId":"'.$playerId.'","currencyCode":"NSP","currency":"NSP","moneyStatus":5}'
+        ]);
+        $body2 = json_decode($response2->getBody()->getContents());
+
+
+        if (is_object($body2->result)) {
+            $transacion->status = "complete";
+            $saved = $transacion->save();
+            $pass =true;
+            if($saved){
+                $transacion->chat->balance=$transacion->chat->balance-$transacion->amount;
+                $transacion->chat->save();
+                    $response = Telegram::sendMessage([
+                        'chat_id' => $transacion->chat_id,
+                        'text' => '✅ تم شحن حسابك أيشانسي بنجاح:'.PHP_EOL.'شكراً على انتظارك',
+                    ]);
+                    foreach ($subscribers as $chatId) {
+                        if($chatId != $admin_chat_id){
+                            $response = Telegram::sendMessage([
+                                'chat_id' => $chatId,
+                                "parse_mode"=>"HTML",
+                                'text' => '🔔 الأدمن الآخر:'.PHP_EOL.''.PHP_EOL.'✅ تم شحن حساب المستخدم بنجاح'.PHP_EOL.'معرف اللاعب: <b><code>'.$playerId.'</code></b>'.PHP_EOL.' المبلغ:'.$transacion->amount.' NSP',
+                            ]);
+                        }
+                    }
+                return response()->json(["status"=>"success","message"=>'✅ تم شحن حساب المستخدم بنجاح'.PHP_EOL.'معرف اللاعب: <code>'.$playerId.'</code>'.PHP_EOL.' المبلغ:'.$transacion->amount.' NSP']);
+            }else{
+                return response()->json(["status"=>"failed","message"=>"حدث خطأ أثناء معالجة الطلب، الرجاء المحاولة في وقت لاحق"]);
+            }
+        } elseif($body2->result == "ex") {
+            $response = $client->request('POST', 'https://agents.ichancy.com/global/api/User/signIn', [
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'User-Agent' => ' Mozilla/5.0 (Linux; Android 11; SAMSUNG SM-A505F) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/20.0 Chrome/106.0.5249.126 Mobile Safari/537.36',
+                'Accept-Encoding' => 'gzip,deflate,br',
+                'Accept' => '*/*',
+                'dnt'=> '1',
+                'origin'=>'https://agents.ichancy.com',
+                'sec-fetch-site: same-origin',
+                'sec-fetch-mode: cors',
+                'sec-fetch-dest: empty',
+                'accept-encoding'=>'gzip, deflate, br',
+                'accept-language'=> 'ar-AE,ar;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6'
+            ],
+            'body' => '{"username": "'.env('AGENT_NAME').'","password": "'.env("AGENT_PWD").'"}'
+            ]);
+            $incom_cookies = $response->getHeader('Set-Cookie');
+            $cookies='';
+            foreach($incom_cookies as $cookie) {
+                // تقسيم النص بناءً على الفاصلة منقوطة
+                $parts = explode(';', $cookie);
+                // اضافة الجزء الأول فقط إلى النص النهائي مع حذف المسافات الزائدة
+                $cookies .= trim($parts[0]) . ';';
+            }
+            // حذف آخر فاصلة منقوطة
+            $cookies = rtrim($cookies, ';');
+            }elseif($body2->result == false){
+                foreach ($subscribers as $chatId) {
+                    if($chatId != $admin_chat_id){
+                        $response = Telegram::sendMessage([
+                            'chat_id' => $chatId,
+                            "parse_mode"=>"HTML",
+                            'text' => '🔔 الأدمن الآخر:'.PHP_EOL.''.PHP_EOL.'🔅 حدث خطأ أثناء تنفيذ العملية، تحقق من رصيد الكاشيرة ثم من حركة الحساب في لوحة التحكم',
+                        ]);
+                    }
+                }
+                return response()->json(["status"=>"failed","message"=>"🔅 حدث خطأ أثناء تنفيذ العملية، تحقق من رصيد الكاشيرة ثم من حركة الحساب في لوحة التحكم"]);
+            }
+        }while(!$pass);
+    }
+
+    public function reject_bemo_charge(Request $request)
+    {
+        $orderId = $request->orderId;
+        $charge = Charge::find($orderId);
+        if($charge->status != 'pending'){
+            return response()->json(["status"=>"failed","message"=>"🔔 تمت معالجة الطلب في وقت سابق"]);
+        }
+        $charge->status = "reject";
+        $saved = $charge->save();
+        if($saved){
+            $response = Telegram::sendMessage([
+                'chat_id' => $charge->chat_id,
+                "parse_mode"=>"HTML",
+                'text' => "🚫 عملية الدفع عبر بيمو غير صحيحة",
+            ]);
+            return response()->json(["status"=>"success","message"=>"🔔 تم رفض الطلب بنجاح"]);
+        }else{
+            return response()->json(["status"=>"failed","message"=>"⛔️ حدث خطأ أثناء رفض الطلب"]);
+        }
+    }
+
+    public function ex_bemo_charge(Request $request)
+    {
+        $orderId = $request->orderId;
+        $charge = Charge::find($orderId);
+        if($charge->status != 'pending'){
+            return response()->json(["status"=>"failed","message"=>"🔔 تمت معالجة الطلب في وقت سابق"]);
+        }
+        $charge->chat->balance= $charge->chat->balance + $charge->amount;
+        $saved = $charge->chat->save();
+        if($saved){
+            $charge->status = "complete";
+            $charged = $charge->save();
+            if($charged){
+                $response = Telegram::sendMessage([
+                    'chat_id' => $charge->chat_id,
+                    'text' => '✅ نجاح:'.PHP_EOL.''.PHP_EOL.'✅ تم تنفيذ عملية الشحن بنجاح عبر بنك بيمو'.PHP_EOL.''.PHP_EOL.'💵 رصيد حسابك في البوت: '.$charge->chat->balance.' NSP',
+                ]);
+                return response()->json(["status"=>"success","message"=>"✅ تم تنفيذ عملية شحن بنجاح عبر بيمو"]);
+            }else{
+                return response()->json(["status"=>"failed","message"=>"🔔 تمت عملية شحن محفظة المستخدم، ولكن فشلت عملية تعديل حالة الطلب"]);
+            }
+        }else{
+            return response()->json(["status"=>"failed","message"=>"🔔 فشلت عملية شحن محفظة المستخدم"]);
+        }
+    }
 
     public function charge_ichancy(Request $request)
     {
@@ -184,7 +427,7 @@ class TelegramController extends Controller
         $ichancy = Ichancy::where('chat_id', '=', $form["chat_id"])->first();
         $form["ichancy_id"] = $ichancy->id;
         $client = new Client();
-        $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=1374816bc9c64b2d79435cf680c4225f;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
+        $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=aa2ab69ccb1f2b68fca02aef93d66142;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
         $playerId = $ichancy->identifier;
         $pass = false;
         do{
@@ -234,7 +477,7 @@ class TelegramController extends Controller
                 'accept-encoding'=>'gzip, deflate, br',
                 'accept-language'=> 'ar-AE,ar;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6'
             ],
-            'body' => '{"username": "Slameh@agent.nsp","password": "Sla@@2023"}'
+            'body' => '{"username": "'.env('AGENT_NAME').'","password": "'.env("AGENT_PWD").'"}'
             ]);
             $incom_cookies = $response->getHeader('Set-Cookie');
             $cookies='';
@@ -248,7 +491,23 @@ class TelegramController extends Controller
             $cookies = rtrim($cookies, ';');
             }elseif($body2->result == false){
                 $transacion = IchTransaction::create($form);
-                return response()->json(["status"=>"failed","message"=>"🔅 شحن حساب إيشانسي متوقف حالياً, سيتم إعلامك بإتمام العملية بعد قليل"]);
+                $inlineKeyboard = [
+                    [
+                        ['text' => '✅ تنفيذ العملية', 'callback_data' => 'ex_ich_charge:'.$transacion->id],
+                        ['text' => '▶️ متابعة الطلب', 'callback_data' => 'pending_ich_charge:'.$chat->id],
+                    ]
+                ];
+                $keyboard = json_encode(['inline_keyboard' => $inlineKeyboard]);
+                $subscribers = [842668006,5144738358];
+                foreach ($subscribers as $chatId) {
+                    $response = Telegram::sendMessage([
+                        'chat_id' => $chatId,
+                        "parse_mode"=>"HTML",
+                        'text' => '🚨 هنالك عملية تعبئة فوق قدرة الكاشيرة الرجاء اعادة التعبئة لاتمام عملية الشحن:'.PHP_EOL.''.PHP_EOL.'معرف المستخدم: <b><code>'.$transacion->chat_id.'</code></b>'.PHP_EOL.'حساب اللاعب: <b><code>'.$ichancy->username.'</code></b> '.PHP_EOL.'معرّف اللاعب: <b><code>'.$ichancy->identifier.'</code></b>'.PHP_EOL.' مبلغ الشحن: '.$transacion->amount.' NSP'.PHP_EOL.' المحفظة: '.$chat->balance.' NSP'.PHP_EOL.' الوقت: '.$transacion->created_at.PHP_EOL.' رقم العملية: '.$transacion->id  ,
+                        'reply_markup' => $keyboard,
+                    ]);
+                }
+                return response()->json(["status"=>"failed","message"=>"🔅 سيستغرق شحن حساب أيشانسي قليلاً من الوقت, سيتم إعلامك بإتمام العملية بعد قليل"]);
             }
         }while(!$pass);
 
@@ -280,19 +539,88 @@ class TelegramController extends Controller
         $form['discountAmount']=$discountAmount;
         $withdraw = Withdraw::create($form);
         if($withdraw){
+            $inlineKeyboard = [
+                [
+                    ['text' => '✅ تنفيذ العملية', 'callback_data' => 'ex_withdraw:'.$withdraw->id]
+                ]
+            ];
+            $keyboard = json_encode(['inline_keyboard' => $inlineKeyboard]);
+            $subscribers = [842668006,5144738358];
+            $messagetext = '🚨عاجل🚨:'.PHP_EOL.'تم إضافة طلب سحب للمشترك <b><code>'.$form["chat_id"].'</code></b> وبانتظار المعالجة.'.PHP_EOL.''.PHP_EOL.'الوقت: '.$withdraw->created_at.''.PHP_EOL.'رقم الطلب: '.$withdraw->id.''.PHP_EOL.'القيمة النهائية: '.$withdraw->finalAmount.''.PHP_EOL.'عبر: '.$withdraw->method.''.PHP_EOL.'كود التحويل: <b><code>'.$withdraw->code.'</code></b>'.PHP_EOL.'الرصيد الحالي: '.$withdraw->chat->balance.'';
+            if($withdraw->subscriber!=null){$messagetext=$messagetext.''.PHP_EOL.'المستفيد: '.$withdraw->subscriber;}
+            foreach ($subscribers as $chatId) {
+                $response = Telegram::sendMessage([
+                    'chat_id' => $chatId,
+                    "parse_mode"=>"HTML",
+                    // 'text' => '🚨عاجل🚨:'.PHP_EOL.'تم إضافة طلب سحب للمشترك <b><code>'.$form["chat_id"].'</code></b> وبانتظار المعالجة.'.PHP_EOL.''.PHP_EOL.'الوقت: '.$withdraw->created_at.''.PHP_EOL.'رقم الطلب: '.$withdraw->id.''.PHP_EOL.'القيمة النهائية: '.$withdraw->finalAmount.''.PHP_EOL.'عبر: '.$withdraw->method.''.PHP_EOL.'كود التحويل: <b><code>'.$withdraw->code.'</code></b>'.PHP_EOL.'الرصيد الحالي: '.$withdraw->chat->balance.''.PHP_EOL.''.$withdraw->subscriber ,
+                    'text' => $messagetext,
+                    'reply_markup' => $keyboard,
+                ]);
+            }
             return response()->json(["status"=>"success","message"=>"✅ تم طلب السحب بنجاح\nسيتم إعلامك بتنفيذ الطلب خلال ساعة\nمعلومات الطلب:\n\nرقم الطلب: ".$withdraw->id."\nالطلب: ".$withdraw->code."\nالقيمة: ".$withdraw->amount."\nنسبة الاقتطاع: 10%\nالمبلغ المقتطع: ".$withdraw->discountAmount."\nالقيمة المستحقة بعد الاقتطاع: ".$withdraw->finalAmount."\nمعرف المستخدم: ".$withdraw->chat_id."\nطريقة السحب: ".$withdraw->method,"withdrawId"=>$withdraw->id]);
         }else{
             return response()->json(["status"=>"failed","message"=>"حدث خطأ أثناء معالجة الطلب، الرجاء المحاولة في وقت لاحق"]);
         }
 }
 
+    public function ex_withdraw(Request $request){
+        $subscribers = [842668006,5144738358];
+        $admin_chat_id = $request->chat_id;
+        $withdraw = Withdraw::find($request->orderId);
+        if($withdraw->status != "requested"){
+            return response()->json(["status"=>"failed","message"=>'❗️ تمت معالجة عملية السحب في وقت لاحق']);
+        }
+        if($withdraw->chat->balance<$withdraw->amount){
+            foreach ($subscribers as $chatId) {
+                if($chatId != $admin_chat_id){
+                    $response = Telegram::sendMessage([
+                        'chat_id' => $chatId,
+                        "parse_mode"=>"HTML",
+                        'text' => '💡 الأدمن الآخر:'.PHP_EOL.'رصيد المستخدم أصبح غير كافي لإتمام عملية السحب'.PHP_EOL.''.PHP_EOL.'معرف المستخدم: <b><code>'.$withdraw->chat_id.'</code></b>'.PHP_EOL.'الرصيد الحالي: '.$withdraw->chat->balance.' NSP'.PHP_EOL.'رقم الطلب: '.$withdraw->id.''.PHP_EOL.'المبلغ المطلوب سحبه: '.$withdraw->finalAmount,
+                    ]);
+                }
+            }
+            $response = Telegram::sendMessage([
+                'chat_id' => $withdraw->chat_id,
+                "parse_mode"=>"HTML",
+                'text' => "❗️ رصيدك في البوت أصبح غير كافي لإتمام عملية السحب",
+            ]);
+            return response()->json(["status"=>"failed","message"=>'❗️ رصيد المستخدم أصبح غير كافي لإتمام عملية السحب'.PHP_EOL.''.PHP_EOL.'معرف المستخدم: <b><code>'.$withdraw->chat_id.'</code></b>'.PHP_EOL.'الرصيد الحالي: '.$withdraw->chat->balance.' NSP'.PHP_EOL.'رقم الطلب: '.$withdraw->id.''.PHP_EOL.'المبلغ المطلوب سحبه: '.$withdraw->finalAmount]);
+        }
+        $withdraw->status="complete";
+        $saved = $withdraw->save();
+        if($saved){
+            $withdraw->chat->balance=$withdraw->chat->balance-$withdraw->amount;
+            $updated = $withdraw->chat->save();
+            if($updated){
+                foreach ($subscribers as $chatId) {
+                    if($chatId != $admin_chat_id){
+                        $response = Telegram::sendMessage([
+                            'chat_id' => $chatId,
+                            "parse_mode"=>"HTML",
+                            'text' => '💡 الأدمن الآخر:'.PHP_EOL.''.PHP_EOL.'✅ تم تنفيذ عملية السحب بنجاح'.PHP_EOL.''.PHP_EOL.'رقم الطلب: '.$withdraw->id.''.PHP_EOL.'معرف المستخدم: '.$withdraw->chat_id.''.PHP_EOL.'القيمة: '.$withdraw->amount.''.PHP_EOL.'القيمة النهائية: '.$withdraw->finalAmount.''.PHP_EOL.'نسبة الحسم: 10%'.PHP_EOL.'القيمة المحسومة: '.$withdraw->discountAmount.''.PHP_EOL.''.PHP_EOL.'الرصيد الحالي: '.$withdraw->chat->balance.' NSP',
+                        ]);
+                    }
+                }
+                $response = Telegram::sendMessage([
+                    'chat_id' => $withdraw->chat_id,
+                    'text' => '✅ تم تنفيذ عملية السحب بنجاح'.PHP_EOL.''.PHP_EOL.'رقم الطلب: '.$withdraw->id.''.PHP_EOL.'معرف المستخدم: '.$withdraw->chat_id.''.PHP_EOL.'القيمة: '.$withdraw->amount.''.PHP_EOL.'القيمة النهائية: '.$withdraw->finalAmount.''.PHP_EOL.'نسبة الحسم: 10%'.PHP_EOL.'القيمة المحسومة: '.$withdraw->discountAmount.''.PHP_EOL.''.PHP_EOL.'الرصيد الحالي: '.$withdraw->chat->balance.' NSP',
+                ]);
+                return response()->json(["status"=>"success","message"=>'✅ تم تنفيذ عملية السحب بنجاح'.PHP_EOL.''.PHP_EOL.'رقم الطلب: '.$withdraw->id.''.PHP_EOL.'معرف المستخدم: '.$withdraw->chat_id.''.PHP_EOL.'القيمة: '.$withdraw->amount.''.PHP_EOL.'القيمة النهائية: '.$withdraw->finalAmount.''.PHP_EOL.'نسبة الحسم: 10%'.PHP_EOL.'القيمة المحسومة: '.$withdraw->discountAmount.''.PHP_EOL.''.PHP_EOL.'الرصيد الحالي: '.$withdraw->chat->balance.' NSP']);
+            }else{
+                return response()->json(["status"=>"failed","message"=>'❗️ فشلت عملية تحديث رصيد المستخدم بعد إتمام السحب']);
+            }
+        }else{
+            return response()->json(["status"=>"failed","message"=>'❗️ فشلت عملية السجب']);
+        }
+    }
 
     public function getIchancyBalance(Request $request)
     {
         $form = $request->all();
         $playerId = Ichancy::select('identifier')->where('chat_id', '=', $form["chat_id"])->value('identifier');
         $client = new Client();
-        $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=1374816bc9c64b2d79435cf680c4225f;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
+        $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=aa2ab69ccb1f2b68fca02aef93d66142;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
         $pass = false;
         do{
             $response2 = $client->request('POST', 'https://agents.ichancy.com/global/api/Player/getPlayerBalanceById', [
@@ -333,7 +661,7 @@ class TelegramController extends Controller
                 'accept-encoding'=>'gzip, deflate, br',
                 'accept-language'=> 'ar-AE,ar;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6'
             ],
-            'body' => '{"username": "Slameh@agent.nsp","password": "Sla@@2023"}'
+            'body' => '{"username": "'.env('AGENT_NAME').'","password": "'.env("AGENT_PWD").'"}'
             ]);
             $incom_cookies = $response->getHeader('Set-Cookie');
             $cookies='';
@@ -358,7 +686,7 @@ class TelegramController extends Controller
         }
         $ichancy = Ichancy::where('chat_id', '=', $form["chat_id"])->first();
         $client = new Client();
-        $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=1374816bc9c64b2d79435cf680c4225f;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
+        $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=aa2ab69ccb1f2b68fca02aef93d66142;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
         $playerId = $ichancy->identifier;
         $pass = false;
         do{
@@ -437,7 +765,7 @@ class TelegramController extends Controller
                 'accept-encoding'=>'gzip, deflate, br',
                 'accept-language'=> 'ar-AE,ar;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6'
             ],
-            'body' => '{"username": "Slameh@agent.nsp","password": "Sla@@2023"}'
+            'body' => '{"username": "'.env('AGENT_NAME').'","password": "'.env("AGENT_PWD").'"}'
             ]);
             $incom_cookies = $response->getHeader('Set-Cookie');
             $cookies='';
@@ -480,7 +808,7 @@ class TelegramController extends Controller
         //         'accept-encoding'=>'gzip, deflate, br',
         //         'accept-language'=> 'ar-AE,ar;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6'
         //     ],
-        //     'body' => '{"username": "Slameh@agent.nsp","password": "Sla@@2023"}'
+        //     'body' => '{"username": "xxxxx","password": "xxxx"}'
         // ]);
 
         // $body = json_decode($response->getBody()->getContents());
@@ -490,7 +818,7 @@ class TelegramController extends Controller
             //$incom_cookies = $response->getHeader('Set-Cookie');
             //$incom_cookies = ['PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=b387e774c1076ba60fcc6841c50115e6; Path=/; Domain=agents.ichancy.com; Expires=Wed, 16 Apr 2025 00:23:17 GMT','languageCode=ar_IQ; Path=/','language=English%20%28UK%29; Path=/'];
             // $incom_cookies =[
-            //     "PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=1374816bc9c64b2d79435cf680c4225f; Path=/; Domain=agents.ichancy.com; Expires=Wed, 16 Apr 2025 02:10:14 GMT",
+            //     "PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=aa2ab69ccb1f2b68fca02aef93d66142; Path=/; Domain=agents.ichancy.com; Expires=Wed, 16 Apr 2025 02:10:14 GMT",
             //     "languageCode=en_GB; Path=/",
             //     "language=English%20%28UK%29; Path=/"
             // ];
@@ -499,7 +827,7 @@ class TelegramController extends Controller
             //     list($key, $value) = explode('=', $cookie, 2);
             //     $cookies[$key] = $value;
             // }
-            $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=1374816bc9c64b2d79435cf680c4225f;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
+            $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=aa2ab69ccb1f2b68fca02aef93d66142;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
             $form =$request->all();
             $username = $form['e_username'];
             $password = $form['e_password'];
@@ -523,7 +851,7 @@ class TelegramController extends Controller
                         'cookie' => $cookies,
 
                     ],
-                    'body' => '{"player":{"email":"'.$email.'","password":"'.$password.'","parentId":"1548684","login":"'.$username.'"}}'
+                    'body' => '{"player":{"email":"'.$email.'","password":"'.$password.'","parentId":"2344226","login":"'.$username.'"}}'
                 ]);
                 $body2 = json_decode($response2->getBody()->getContents());
 
@@ -597,7 +925,7 @@ class TelegramController extends Controller
             if($ichancy){
                 if($ichancy->identifier==null){
                     $client = new Client();
-                    $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=1374816bc9c64b2d79435cf680c4225f;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
+                    $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=aa2ab69ccb1f2b68fca02aef93d66142;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
                     $username = $ichancy->username;
                     $pass = false;
                     $playerId='';
@@ -647,7 +975,7 @@ class TelegramController extends Controller
                             'accept-encoding'=>'gzip, deflate, br',
                             'accept-language'=> 'ar-AE,ar;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6'
                         ],
-                        'body' => '{"username": "Slameh@agent.nsp","password": "Sla@@2023"}'
+                        'body' => '{"username": "'.env('AGENT_NAME').'","password": "'.env("AGENT_PWD").'"}'
                         ]);
                         $incom_cookies = $response->getHeader('Set-Cookie');
                         $cookies='';
@@ -936,7 +1264,7 @@ public function withdraw_auto(Request $request)
             //$incom_cookies = $response->getHeader('Set-Cookie');
             //$incom_cookies = ['PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=b387e774c1076ba60fcc6841c50115e6; Path=/; Domain=agents.ichancy.com; Expires=Wed, 16 Apr 2025 00:23:17 GMT','languageCode=ar_IQ; Path=/','language=English%20%28UK%29; Path=/'];
             // $incom_cookies =[
-            //     "PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=1374816bc9c64b2d79435cf680c4225f; Path=/; Domain=agents.ichancy.com; Expires=Wed, 16 Apr 2025 02:10:14 GMT",
+            //     "PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=aa2ab69ccb1f2b68fca02aef93d66142; Path=/; Domain=agents.ichancy.com; Expires=Wed, 16 Apr 2025 02:10:14 GMT",
             //     "languageCode=en_GB; Path=/",
             //     "language=English%20%28UK%29; Path=/"
             // ];
@@ -945,7 +1273,7 @@ public function withdraw_auto(Request $request)
             //     list($key, $value) = explode('=', $cookie, 2);
             //     $cookies[$key] = $value;
             // }
-            $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=1374816bc9c64b2d79435cf680c4225f;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
+            $cookies = 'PHPSESSID_3a07edcde6f57a008f3251235df79776a424dd7623e40d4250e37e4f1f15fadf=aa2ab69ccb1f2b68fca02aef93d66142;__cf_bm=.pMpbMYZAN8Wu8_D4EnBpcKKx9s_qUYavyo8uuURoS8-1744164614-1.0.1.1-spQ8HNpMG9NSxUM3m06M2j.ZwghTt.wczinH49gvylJMkvrqve5DDpXsdZV3WMcIdjOaWviwNNCduJHAzB4qYzLiBdZDaK7CcfuyENaMhqo;languageCode=ar_IQ';
             $form =$request->all();
             $username = $form['e_username'];
             $password = $form['e_password'];
@@ -968,7 +1296,7 @@ public function withdraw_auto(Request $request)
                         'accept-language'=> 'ar-AE,ar;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6',
                         'cookie' => $cookies,
                     ],
-                    'body' => '{"player":{"email":"'.$email.'","password":"'.$password.'","parentId":"1548684","login":"'.$username.'"}}'
+                    'body' => '{"player":{"email":"'.$email.'","password":"'.$password.'","parentId":"2344226","login":"'.$username.'"}}'
                 ]);
                 $body2 = json_decode($response2->getBody()->getContents());
 
@@ -989,7 +1317,7 @@ public function withdraw_auto(Request $request)
                             'accept-encoding'=>'gzip, deflate, br',
                             'accept-language'=> 'ar-AE,ar;q=0.9,en-GB;q=0.8,en;q=0.7,en-US;q=0.6'
                         ],
-                        'body' => '{"username": "Slameh@agent.nsp","password": "Sla@@2023"}'
+                        'body' => '{"username": "'.env('AGENT_NAME').'","password": "'.env("AGENT_PWD").'"}'
                         ]);
                         $incom_cookies = $response->getHeader('Set-Cookie');
                         $cookies='';
@@ -1030,3 +1358,98 @@ public function withdraw_auto(Request $request)
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////charge orginal version for one code, next update to enable multi code
+/*
+public function charge(Request $request)
+    {
+        $form = Validator::make($request->all(),[
+                "amount"=>"required|numeric",
+                "processid"=>"required|numeric",
+                "chat_id"=>"required",
+                "method"=>"required"
+        ],[
+            "numeric"=>"الرجاء إدخال قيم صحيحة"
+        ]);
+        if($form->fails()){
+            $errorMessages = $form->errors()->all(); // الحصول على جميع رسائل الخطأ
+            return response()->json(["status"=>"validator","message"=>$errorMessages]);
+        }
+        $form =$form->validate();
+        $checkCharge = Charge::where("processid",$form['processid'])->first();
+        if($checkCharge){
+            if($checkCharge['status']=='complete'){
+                return response()->json(["status"=>"failed","message"=>"عملية التحويل منفّذة مسبقاً، الرجاء إدخال عملية تحويل جديدة"]);
+            }else{
+                return response()->json(["status"=>"failed","message"=>"عملية التحويل موجودة مسبقاً، الرجاء التواصل مع الدعم لمعالجة الخطأ"]);
+            }
+        }
+        ///////
+
+        // $client = new Client(['proxy' => 'http://uc28a3ecf573f05d0-zone-custom-region-sy-asn-AS29256:uc28a3ecf573f05d0@43.153.237.55:2334']);
+        $client = new Client();
+        try{
+        $response = $client->request('POST', 'https://cash-api.syriatel.sy/Wrapper/app/7/SS2MTLGSM/ePayment/customerHistory', [
+            'headers' => [
+                'Content-Type' => 'application/x-www-form-urlencoded; charset=UTF-8',
+                'User-Agent' => 'Dalvik/2.1.0 (Linux; U; Android 11; SM-A505F Build/RP1A.200720.012)',
+                'Host' => 'cash-api.syriatel.sy',
+                'Connection' => 'Keep-Alive',
+                'Accept-Encoding' => 'gzip'
+            ],
+            'body' => 'appVersion=5.5.2&pageNumber=1&searchGsmOrSecret=&type=2&systemVersion=Android%2Bv11&deviceId=ffffffff-fa8d-e3ca-ffff-ffffef05ac4a&userId=1657180&sortType=1&mobileManufaturer=samsung&mobileModel=SM-A505F&channelName=4&lang=0&hash=cd939479d1e2c5e0dfb93b428825a77e467c1c890131508fe85199c6e6f6ed07&status=1'
+        ]);
+    }catch(GuzzleException $e){
+        return response()->json(["status"=>"failedsy","message"=>"فشلت التحقق الآلي من عملية الدفع، الرجاء إعادة المحاولة"]);
+    }
+        $body = json_decode($response->getBody()->getContents());
+        if($body->code==1){
+                $data =  $body->data->data;
+                $desiredAmount = $form['amount'];
+                $desiredTransactionNo = $form['processid'];
+
+                // تحقق من وجود العنصر الذي يحتوي على القيمتين المحددتين
+                $found = false;
+                $matchedAmount = null;
+                foreach ($data as $item) {
+                    if ($item->amount == $desiredAmount && $item->transactionNo == $desiredTransactionNo) {
+                        $found = true;
+                        $matchedAmount = $item->amount;
+                        break;
+                    }
+                }
+                if($found){
+                    $form['status']='complete';
+                    $charge = Charge::create($form);
+                        if($charge){
+                            if($desiredAmount>=5000){
+                                $chat = Chat::find($form['chat_id']);
+                                $chat->balance = $chat->balance +$matchedAmount;
+                                $chat->save();
+                                return response()->json(["status"=>"success","message"=>"شكراً لك، تم شحن رصيدك في البوت بنجاح."]);
+                            }else{
+                                return response()->json(["status"=>"success","message"=>"أقل قيمة للشحن هي 5000 وأي قيمة أقل من 5000 لايمكن شحنها أو استرجاعها"]);
+                            }
+                        }else{
+                                return response()->json(["status"=>"failed","message"=>"حدث خطأ أثناء الطلب الرجاء المحاولة مرة أخرى"]);
+                        }
+                }else{
+                    return response()->json(["status"=>"failed","message"=>"عملية الدفع غير صحيحة" ]);
+                }
+        }else{
+            return response()->json(["status"=>"failed","message"=>"فشل التحقق من عملية الدفع، الرجاء التواصل مع الدعم" ]);
+        }
+    }
+*/
