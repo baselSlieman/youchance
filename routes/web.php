@@ -40,6 +40,10 @@ Route::middleware(['auth','admin'])->group(function(){
     Route::resource("withdraws",WithdrawController::class)->missing(function (Request $request) {
         return Redirect::route('withdraws.index');
     });
+
+    Route::POST("/chats/giftstore",[ChatController::class,"giftstore"])->name('chats.giftstore');
+    Route::get("/chats/usergifts/{chat}",[ChatController::class,"usergifts"])->name('chats.usergifts');
+    Route::get("/chats/userAffiliates/{chat}",[ChatController::class,"userAffiliates"])->name('chats.userAffiliates');
     Route::get("/chats/createMessage/{chat}",[ChatController::class,"createMessage"])->name('chats.createMessage');
     Route::POST("/chats/sendMessage/{chat}",[ChatController::class,"sendMessage"])->name('chats.sendMessage');
     Route::resource("chats",ChatController::class)->missing(function (Request $request) {

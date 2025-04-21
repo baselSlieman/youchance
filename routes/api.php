@@ -27,6 +27,10 @@ Route::middleware(['api','auth:sanctum'])->group(function(){
         Route::post('/chargeBemo', [TelegramController::class,'chargeBemo']);
         Route::post('/ex_bemo_charge', [TelegramController::class,'ex_bemo_charge']);
         Route::post('/reject_bemo_charge', [TelegramController::class,'reject_bemo_charge']);
+        Route::post('/affiliateQuery', [TelegramController::class,'affiliateQuery']);
+        Route::post('/malaki', [TelegramController::class,'malaki']);
+        Route::post('/transBalance', [TelegramController::class,'transBalance']);
+        Route::post('/execGift', [TelegramController::class,'execGift']);
         // Route::post('/newichaccount_v2', [TelegramController::class,'newichaccount_v2']);
         //testing
         Route::post('/charge1', [TelegramController::class,'charge1']);

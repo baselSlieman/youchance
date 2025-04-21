@@ -17,7 +17,8 @@ class Chat extends Model
         "first_name",
         "last_name",
         "info",
-        "balance"
+        "balance",
+        "affiliate_code"
     ];
 
     public function ichancies():HasMany
@@ -28,5 +29,8 @@ class Chat extends Model
     {
         return $this->hasMany(IchTransaction::class);
     }
-
+    public function affiliates():HasMany
+    {
+        return $this->hasMany(Affiliate::class);
+    }
 }
