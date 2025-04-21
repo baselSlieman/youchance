@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Affiliate;
 use App\Models\Category;
 use App\Models\Charge;
 use App\Models\Chat;
+use App\Models\Gift;
 use App\Models\Ichancy;
 use App\Models\IchTransaction;
 use App\Models\Withdraw;
+use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 // use GuzzleHttp\RequestOptions;
@@ -17,6 +20,7 @@ use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use GuzzleHttpClient;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Mockery\Generator\StringManipulation\Pass\Pass;
 use Telegram\Bot\Laravel\Facades\Telegram;
@@ -28,9 +32,10 @@ class TelegramController extends Controller
     {
         $form = Validator::make($request->all(), [
             "id"=>"required",
-            "username"=>"required",
-            "first_name"=>"required",
+            "username"=>"nullable",
+            "first_name"=>"nullable",
             "last_name"=>"nullable",
+            "affiliate_code"=>"nullable",
         ],[
             'required'=>'الحقل :attribute مطلوب.'
         ]);
@@ -39,11 +44,16 @@ class TelegramController extends Controller
             return response()->json(["status"=>"validator","errorMessages"=>$errorMessages]);
         }
         $form = $form->validated();
-        $chat = Chat::find($form['id']);
-        if($chat===null){
-            $chat = Chat::create($form);
+        // $chat = Chat::find($form['id']);
+        // if($chat===null){
+        //     $chat = Chat::create($form);
+        // }
+        $chat = Chat::firstOrCreate(['id' => $form['id']], $form);
+        if($chat){
+            return response()->json(["status"=>"success"]);
+        }else{
+            return response()->json(["status"=>"failed"]);
         }
-        return response()->json(["status"=>"success","chat"=>$chat]);
     }
 
 
@@ -110,6 +120,7 @@ class TelegramController extends Controller
             return response()->json(["status"=>"validator","message"=>$errorMessages]);
         }
         $form =$form->validate();
+        $tody =  Carbon::now()->format('Y-m-d');
         $checkCharge = Charge::where("processid",$form['processid'])->first();
         if($checkCharge){
             if($checkCharge['status']=='complete'){
@@ -153,7 +164,7 @@ class TelegramController extends Controller
                         $found = false;
                         $matchedAmount = null;
                         foreach ($data as $item) {
-                            if ($item->amount == $desiredAmount && $item->transactionNo == $desiredTransactionNo) {
+                            if ($item->transactionNo == $desiredTransactionNo && $item->amount == $desiredAmount && Carbon::parse($item->date)->toDateString() == $tody) {
                                 $found = true;
                                 $matchedAmount = $item->amount;
                                 break;
@@ -163,10 +174,19 @@ class TelegramController extends Controller
                             $form['status']='complete';
                             $charge = Charge::create($form);
                                 if($charge){
-                                    if($desiredAmount>=5000){
+                                    if($desiredAmount<=5000){
                                         $chat = Chat::find($form['chat_id']);
                                         $chat->balance = $chat->balance +$matchedAmount;
                                         $chat->save();
+                                        if(isset($chat->affiliate_code)){
+                                            Affiliate::create([
+                                                'client'=>$chat->id,
+                                                'amount'=>$desiredAmount,
+                                                'affiliate_amount'=>$desiredAmount * 0.03,
+                                                'chat_id'=>$chat->affiliate_code,
+                                                'month_at' => date('Y-m')
+                                            ]);
+                                        }
                                         return response()->json(["status"=>"success","message"=>"شكراً لك، تم شحن رصيدك في البوت بنجاح."]);
                                     }else{
                                         return response()->json(["status"=>"success","message"=>"أقل قيمة للشحن هي 5000 وأي قيمة أقل من 5000 لايمكن شحنها أو استرجاعها"]);
@@ -402,6 +422,15 @@ class TelegramController extends Controller
                     'chat_id' => $charge->chat_id,
                     'text' => '✅ نجاح:'.PHP_EOL.''.PHP_EOL.'✅ تم تنفيذ عملية الشحن بنجاح عبر بنك بيمو'.PHP_EOL.''.PHP_EOL.'💵 رصيد حسابك في البوت: '.$charge->chat->balance.' NSP',
                 ]);
+                if(isset($charge->chat->affiliate_code)){
+                    Affiliate::create([
+                        'client'=>$charge->chat_id,
+                        'amount'=>$charge->amount,
+                        'affiliate_amount'=>$charge->amount * 0.03,
+                        'chat_id'=>$charge->chat->affiliate_code,
+                        'month_at' => date('Y-m')
+                    ]);
+                }
                 return response()->json(["status"=>"success","message"=>"✅ تم تنفيذ عملية شحن بنجاح عبر بيمو"]);
             }else{
                 return response()->json(["status"=>"failed","message"=>"🔔 تمت عملية شحن محفظة المستخدم، ولكن فشلت عملية تعديل حالة الطلب"]);
@@ -411,6 +440,53 @@ class TelegramController extends Controller
         }
     }
 
+    public function execGift(Request $request)
+    {
+        $code =  $request->code;
+        $gift = Gift::where('code', $code)->firstOrFail();
+        if(! $gift->exists()){
+            return response()->json(["status"=>"failed","message"=>"🔔 كود الهدية غير صحيح"]);
+        }
+        $isStatusPending = $gift->status === 'pending';
+        if(! $isStatusPending){
+            return response()->json(["status"=>"failed","message"=>"🔔 كود الهدية منفذ مسبقاً"]);
+        }
+        $updated = $gift->update(['status' => 'complete']);
+        if($updated){
+            $gift->chat->balance += $gift->amount;
+            $savedbalanace = $gift->chat->save();
+            if($savedbalanace){
+                return response()->json(["success"=>"failed","message"=>"✅ تم تنفيذ الهدية بنجاح وتعديل رصيدك في البوت"]);
+            }else{
+                return response()->json(["status"=>"failed","message"=>"🔴 حصل خطأ أثناء تحديث رصيدك بالبوت"]);
+            }
+        }else{
+            return response()->json(["status"=>"failed","message"=>"🔴 حصل خطأ أثناء تحديث قسيمة الهدية"]);
+        }
+    }
+
+
+    public function affiliateQuery(Request $request)
+    {
+        $form = Validator::make($request->all(), [
+            "chat_id"=>"required",
+        ],[
+            'required'=>'الحقل :attribute مطلوب.'
+        ]);
+        if ($form->fails()) {
+            $errorMessages = $form->errors()->all(); // الحصول على جميع رسائل الخطأ
+            return response()->json(["status"=>"validator","message"=>"فشل الحصول على المعرف الخص بك، الرجاء إعادة المحاولة"]);
+        }
+        $form = $form->validated();
+        $totalAffiliateAmount = Affiliate::where('chat_id', $form['chat_id'])
+        ->where('month_at', date('Y-m'))
+        ->sum('affiliate_amount');
+
+        $totalAffiliateCount = Affiliate::where('chat_id', $form['chat_id'])
+        ->where('month_at', date('Y-m'))
+        ->count('affiliate_amount');
+        return response()->json(["status"=>"success","message"=>"⚪️ عدد إحالاتك الحالية: ".$totalAffiliateCount."".PHP_EOL."".PHP_EOL."⚪️ العمولة الشهرية: ".$totalAffiliateAmount."".PHP_EOL."".PHP_EOL."يجب أن يكون لديك 3 إحلات نشطة على الأقل ليتم صرف العمولة لك."]);
+    }
     public function charge_ichancy(Request $request)
     {
         $form = $request->all();
@@ -952,10 +1028,10 @@ class TelegramController extends Controller
 
                     if (is_object($body2->result)) {
                         if(!empty($body2->result->records)){
-                        $users = collect($body2->result->records);
-                        $playerId =  data_get($users->firstWhere('username', $username), 'playerId', null);
-                        $ichancy->identifier=$playerId;
-                        $saved = $ichancy->save();
+                            $users = collect($body2->result->records);
+                            $playerId =  data_get($users->firstWhere('username', $username), 'playerId', null);
+                            $ichancy->identifier=$playerId;
+                            $saved = $ichancy->save();
                             if($saved){$pass=true;}else{return response()->json(["status"=>"success","message"=>"error_playerId"]);}
                         }else{
                             return response()->json(["status"=>"success","message"=>"error_playerId"]);
@@ -1073,6 +1149,31 @@ class TelegramController extends Controller
 
 
 
+    public function transBalance(Request $request)
+    {
+        $to = Chat::find($request->user_id);
+        if(!$to){
+            return response()->json(["message"=>"🔴 لا يوجد مستخدم في البوت بالمعرف المدخل"]);
+        }
+        $from = Chat::find($request->chat_id);
+        if($from->balance<$request->amount){
+            return response()->json(["message"=>"🔴 ليس لديك رصيد كافي لإهداء المبلغ المطلوب"]);
+        }
+        $from->balance = $from->balance - $request->amount;
+        $saved=$from->save();
+        if($saved){
+            $to->balance = $to->balance + $request->amount;
+            $savedto=$to->save();
+            if($savedto){
+                return response()->json(["message"=>"✅ تم إهداء الرصيد: ".$request->amount." NSP للمستخدم: ".$request->user_id." بنجاح"]);
+            }else{
+                return response()->json(["message"=>"🔴 حدث خطأ غير متوفع أثناء تنفيذ عملية الإهداء، الرجاء المحاولة لاحقاً"]);
+            }
+        }else{
+            return response()->json(["message"=>"🔴 حدث خطأ غير متوفع أثناء تنفيذ عملية الإهداء، الرجاء المحاولة لاحقاً"]);
+        }
+
+    }
 
 
 
@@ -1082,8 +1183,18 @@ class TelegramController extends Controller
 
 
 
-
-
+    public function malaki(Request $request)
+    {
+        $currentMonth = date('Y-m');
+        $topChats = Chat::select('chats.id', 'chats.username', 'chats.first_name', 'chats.last_name',DB::raw('SUM(charges.amount) as month_total'))
+        ->join('charges', 'chats.id', '=', 'charges.chat_id')
+        ->where(DB::raw('MONTH(charges.created_at)'), '=', date('m'))
+        ->groupBy('chats.id', 'chats.username', 'chats.first_name', 'chats.last_name')
+        ->orderBy(DB::raw('SUM(charges.amount)'), 'desc')
+        ->limit(5)
+        ->get(['chats.id', 'chats.username', 'chats.first_name', 'chats.last_name', DB::raw('SUM(charges.amount) as total_charge_amount')]);
+        return response()->json(["topChats"=>$topChats]);
+    }
 
 
 
@@ -1094,6 +1205,17 @@ class TelegramController extends Controller
 
 public function charge1(Request $request)
 {
+
+    $currentMonth = date('Y-m');
+
+$topChats = Chat::select('chats.id', 'chats.username', 'chats.first_name', 'chats.last_name',DB::raw('SUM(charges.amount) as month_total'))
+    ->join('charges', 'chats.id', '=', 'charges.chat_id')
+    ->where(DB::raw('MONTH(charges.created_at)'), '=', date('m'))
+    ->groupBy('chats.id', 'chats.username', 'chats.first_name', 'chats.last_name')
+    ->orderBy(DB::raw('SUM(charges.amount)'), 'desc')
+    ->limit(5)
+    ->get(['chats.id', 'chats.username', 'chats.first_name', 'chats.last_name', DB::raw('SUM(charges.amount) as total_charge_amount')]);
+    return $topChats;
     // $form = Validator::make($request->all(),[
     //         "amount"=>"required|numeric",
     //         "processid"=>"required|numeric",
