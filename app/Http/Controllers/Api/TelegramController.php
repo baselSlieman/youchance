@@ -174,7 +174,7 @@ class TelegramController extends Controller
                             $form['status']='complete';
                             $charge = Charge::create($form);
                                 if($charge){
-                                    if($desiredAmount<=5000){
+                                    if($charge->amount >= 5000){
                                         $chat = Chat::find($form['chat_id']);
                                         $chat->balance = $chat->balance +$matchedAmount;
                                         $chat->save();
