@@ -12,15 +12,21 @@ class Charge extends Component
     use WithPagination,WithoutUrlPagination;
     protected $paginationTheme ="bootstrap";
     public $search = '';
+    public $chat_id=null;
     public function render()
     {
+
         $charges = ModelsCharge::query()
         ->when($this->search, function ($query) {
             return $query->whereHas('chat', function ($query) {
                 $query->where('username', 'like', '%' . $this->search . '%')->orWhere('id', $this->search);
             })->orWhere('processid',$this->search);
-        })
-        ->orderByRaw("status = 'pending' DESC, created_at DESC")
+        });
+        if(isset($this->chat_id)){
+            $charges->where("chat_id",$this->chat_id);
+        }
+
+        $charges = $charges->orderByRaw("status = 'pending' DESC, created_at DESC")
         ->with('chat')
         ->paginate(10);
 

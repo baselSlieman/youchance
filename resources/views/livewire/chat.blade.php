@@ -18,20 +18,20 @@
     <table class="table mt-3 table-bordered" style="vertical-align: middle;">
         <thead  class="bg-dark-subtle">
             <tr>
-                <th>id</th>
+                <th class="text-center"><i class="fas fa-user-astronaut"></i> user_id</th>
                 <th><i class="fas fa-user"></i> User</th>
                 <th class="d-none d-md-table-cell"><i class="fas fa-info-circle"></i> info</th>
-                <th class="d-none d-md-table-cell"><i class="fas fa-cog"></i> option</th>
+                <th class="d-none d-md-table-cell text-center"><i class="fas fa-cog"></i> option</th>
             </tr>
         </thead>
         <tbody>
             @forelse($chats as $chat)
                 <tr>
-                    <td>{{ $chat->id }}</td>
+                    <td class="text-center">{{ $chat->id }}</td>
                     <td>
                         <p class="mt-1"><i class="far fa-user"></i> username: {{ $chat->username}}</p>
                         <p class="mt-1"><i class="fas fa-user"></i> fullname: {{ $chat->first_name }} {{$chat->last_name}}</p>
-                        <p class="mb-1 mt-3"><i class="fas fa-coins"></i> balance: <strong class="text-danger">{{ $chat->balance}}</strong> NSP</p>
+                        <p class="mb-1 mt-3"><i class="fas fa-wallet"></i> wallet: <strong class="text-danger">{{ $chat->balance}}</strong> NSP <a class="btn btn-sm btn-outline-success py-0 ms-3 d-none d-md-inline-block" href="{{route('charges.index', ['chat_id' => $chat->id])}}"><i class="fas fa-level-down-alt"></i></a><a class="btn btn-sm btn-outline-danger py-0 ms-3 d-none d-md-inline-block" href="{{route('withdraws.index', ['chat_id' => $chat->id])}}"><i class="fas fa-level-up-alt"></i></a></p>
                     </td>
 
 
@@ -72,9 +72,12 @@
                 </tr>
                 <tr class="d-table-row d-md-none">
                     <td colspan="2" class="text-center bg-body-secondary">
-                        <a href="{{ route('chats.createMessage', $chat) }}" class="btn btn-primary btn-sm mx-3"><i class="fab fa-telegram-plane"></i></a>
-                        <a href="{{ route('chats.edit', $chat) }}" class="btn btn-success btn-sm mx-3"><i class="fas fa-marker"></i></a>
-                        <a href="{{ route('chats.userAffiliates', $chat) }}" class="btn btn-danger btn-sm mx-3"><i class="fas fa-percent"></i></a>
+                        <a href="{{ route('chats.createMessage', $chat) }}" class="btn btn-primary btn-sm me-2"><i class="fab fa-telegram-plane"></i></a>
+                        <a href="{{ route('chats.edit', $chat) }}" class="btn btn-success btn-sm mx-2"><i class="fas fa-marker"></i></a>
+                        <a href="{{ route('chats.userAffiliates', $chat) }}" class="btn btn-danger btn-sm mx-2"><i class="fas fa-percent"></i></a>
+                        <a href="{{ route('chats.usergifts', $chat) }}" class="btn btn-warning btn-sm mx-2"><i class="fas fa-gift"></i></a>
+                        <a class="btn btn-success btn-sm mx-2" href="{{route('charges.index', ['chat_id' => $chat->id])}}"><i class="fas fa-level-down-alt"></i></a>
+                        <a class="btn  btn-danger btn-sm ms-2" href="{{route('withdraws.index', ['chat_id' => $chat->id])}}"><i class="fas fa-level-up-alt"></i></a>
                     </td>
                 </tr>
 

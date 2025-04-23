@@ -9,14 +9,10 @@ class WithdrawController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // $withdraws = Withdraw::query()
-        // ->orderByRaw("status = 'requested' DESC, created_at DESC")
-        // ->with('chat')
-        // ->paginate(10);
-        // return view("admin.withdraw.index",compact('withdraws'));
-        return view("admin.withdraw.index");
+        $chat_id = $request->query('chat_id');
+        return view("admin.withdraw.index",compact("chat_id"));
     }
     public function rejectOrder(Request $request,Withdraw $withdraw){
         $withdraw->status="rejected";

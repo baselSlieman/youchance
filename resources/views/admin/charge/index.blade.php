@@ -6,9 +6,10 @@
 
 
 
+
     <div class="container my-3">
         <div class="row justify-content-center g-2 gx-3">
-            @livewire('charge')
+            @livewire('charge',["chat_id"=>$chat_id])
     </div>
     </div>
 
