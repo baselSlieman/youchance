@@ -1,10 +1,20 @@
 <div class="col col-md-12">
 
-    <div class="d-flex justify-content-between align-items-center">
+    {{-- <div class="d-flex justify-content-between align-items-center">
         <h2 class="mb-0"><i class="fas fa-upload"></i> withdraws:</h2>
         <div><input wire:model.live.debounce.500ms="search" type="search" class="form-control" placeholder="search..." />
         </div>
 
+    </div> --}}
+
+    <div class="container">
+        <div class="row align-items-center clearfix">
+            <div class="col-6 col-md-4 order-1 order-md-1 px-0"><div><h3 class="mb-0"><i class="fas fa-upload"></i> withdraws:</h3></div></div>
+            <div class="col-12 col-md-4 order-3 order-md-2 px-0 mt-3 mt-md-0"><div><input wire:model.live.debounce.500ms="search" type="search" class="form-control" placeholder="search..." /></div></div>
+            <div class="col-6 col-md-4 order-2 order-md-3 px-0"><div>
+                <button onclick="history.back()" class=" btn btn-sm btn-md-lg btn-outline-danger float-end"><i class="fas fa-arrow-right"></i></button>
+            </div></div>
+        </div>
     </div>
 
     @if (session('success'))

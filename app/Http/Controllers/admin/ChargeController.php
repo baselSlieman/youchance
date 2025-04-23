@@ -13,9 +13,10 @@ class ChargeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view("admin.charge.index");
+        $chat_id = $request->query('chat_id');
+        return view("admin.charge.index",compact("chat_id"));
     }
 
     /**

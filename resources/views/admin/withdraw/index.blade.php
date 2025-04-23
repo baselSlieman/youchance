@@ -9,7 +9,7 @@
     <div class="container my-3">
         <div class="row justify-content-center g-2 gx-3">
 
-            @livewire('withdraw')
+            @livewire('withdraw',["chat_id"=>$chat_id])
             <!-- Button trigger modal -->
 
 
