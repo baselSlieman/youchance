@@ -4,5 +4,5 @@
 
 @section('content')
 
-    @livewire(App\Livewire\withdraws\Edit::class,["withdraw"=>$withdraw])
+    @livewire('WithdrawsEdit',["withdraw"=>$withdraw])
 @endsection

@@ -5,5 +5,5 @@
 @section('content')
 
 
-@livewire('basel',['chat'=>$chat])
+@livewire('Gift',['chat'=>$chat])
 @endsection
