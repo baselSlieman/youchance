@@ -10,7 +10,7 @@ use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
 use Telegram\Bot\Laravel\Facades\Telegram;
 
-class gift extends Component
+class Gift extends Component
 {
     use WithPagination,WithoutUrlPagination;
     protected $paginationTheme ="bootstrap";
