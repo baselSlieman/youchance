@@ -4,5 +4,6 @@
 
 @section('content')
 
-@livewire('chats.edit',['chat'=>$chat])
+@livewire(App\Livewire\chats\Edit::class,['chat'=>$chat])
+
 @endsection

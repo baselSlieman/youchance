@@ -4,6 +4,5 @@
 
 @section('content')
 
-@livewire('charges.edit',['charge'=>$charge])
-
+@livewire(App\Livewire\charges\Edit::class,['charge'=>$charge])
 @endsection
