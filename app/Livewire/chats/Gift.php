@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Chats;
+namespace App\Livewire\chats;
 
 use App\Models\Gift as ModelsGift;
 use Illuminate\Support\Facades\App;
