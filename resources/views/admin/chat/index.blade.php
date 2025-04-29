@@ -8,7 +8,8 @@
 
     <div class="container my-3">
         <div class="row justify-content-center g-2 gx-3">
-            @livewire("chats.Chat")
+            @livewire(App\Livewire\chats\Chat::class)
+
     </div>
     </div>
 
