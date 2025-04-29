@@ -12,8 +12,8 @@
             <div class="col col-md-12 px-3">
 
                 <div class="d-flex justify-content-between align-items-center">
-                    <h3 class="mb-0"><i class="fas fa-random"></i> @yield('title'):</h3>
-                    <div><a href="{{route('ichancies.index')}}" class="btn btn-outline-danger me-2"><i class="fas fa-arrow-right"></i></a></div>
+                    <h3 class="mb-0"><i class="fas fa-random"></i> @lang('Ichancy '.$type):</h3>
+                    <div><a href="{{route('ichancies.index')}}" class="btn btn-outline-danger me-2"><i class="fas @if(App()->isLocale('en')) fa-arrow-right @else fa-arrow-left @endif"></i></a></div>
                 </div>
 
                 @if (session('success'))
@@ -29,42 +29,42 @@
                 <table class="table mt-3 table-bordered">
                     <thead>
                         <tr>
-                            <th class=" text-secondary"><i class="fas fa-retweet"></i> Transaction</th>
-                            <th class="d-none d-md-table-cell"><i class="fas fa-rocket"></i> Ichancy</th>
+                            <th class=" text-secondary"><i class="fas fa-retweet"></i> @lang('Transaction')</th>
+                            <th class="d-none d-md-table-cell"><i class="fas fa-rocket"></i> @lang('Ichancy')</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($ichancyTransRes as $ichancytr)
                             <tr>
                                 <td>
-                                    <p class="text-info"><i class="fas fa-share"></i> ID: {{ $ichancytr->id }}</p>
-                                    <div class="d-flex justify-content-between align-items-center"><p><i class="fas fa-rocket"></i> ichancy: {{$ichancytr->ichancy->username}}<small class="text-danger ms-2 d-none"><i class="fas fa-lock"></i> {{$ichancytr->ichancy->password}}</small></p><p><i class="fas fa-eye"></i></p></div>
-                                    <p class="mt-1"><i class="fas fa-rocket"></i> player id: {{ $ichancytr->ichancy->identifier }}</p>
-                                    <p><i class="fas fa-coins"></i> amount: <span class="text-danger">{{$ichancytr->amount}}</span> NSP</p>
-                                    <p><i class="far fa-calendar-alt"></i> date: {{ $ichancytr->created_at }}</p>
+                                    <p class="text-info"><i class="fas fa-share"></i> @lang('PID'): {{ $ichancytr->id }}</p>
+                                    <div class="d-flex justify-content-between align-items-center"><p><i class="fas fa-rocket"></i> @lang('ichancy'): {{$ichancytr->ichancy->username}}<small class="text-danger ms-2 d-none"><i class="fas fa-lock"></i> {{$ichancytr->ichancy->password}}</small></p><p><i class="fas fa-eye"></i></p></div>
+                                    <p class="mt-1"><i class="fas fa-rocket"></i> @lang('player id'): {{ $ichancytr->ichancy->identifier }}</p>
+                                    <p><i class="fas fa-coins"></i> @lang('amount'): <span class="text-danger">{{$ichancytr->amount}}</span> NSP</p>
+                                    <p><i class="far fa-calendar-alt"></i> @lang('date'): {{ $ichancytr->created_at }}</p>
                                     <div class="d-block d-md-none">
-                                        <p class="mt-1"><i class="far fa-user"></i> user: {{ $ichancytr->chat->username}}</p>
-                                        <p class="mt-1"><i class="fas fa-user"></i> chat_id: {{ $ichancytr->chat_id }}</p>
+                                        <p class="mt-1"><i class="far fa-user"></i> @lang('user'): {{ $ichancytr->chat->username}}</p>
+                                        <p class="mt-1"><i class="fas fa-user"></i> @lang('chat_id'): {{ $ichancytr->chat_id }}</p>
                                         <p>
                                             @switch($ichancytr->status)
                                             @case("complete")<i class="far fa-check-circle text-success"></i>@break
                                             @case("requested")<i class="far fa-hourglass text-primary"></i>@break
                                             @default
-                                        @endswitch {{$ichancytr->status}}</p>
+                                        @endswitch  <span>{{__($ichancytr->status)}}</span></p>
                                     </div>
                                 </td>
 
 
 
                                 <td class="d-none d-md-table-cell">
-                                    <p class="mt-1"><i class="far fa-user"></i> user: {{ $ichancytr->chat->username}}</p>
-                                    <p class="mt-1"><i class="fas fa-user"></i> chat_id: {{ $ichancytr->chat_id }}</p>
+                                    <p class="mt-1"><i class="far fa-user"></i> @lang('user'): {{ $ichancytr->chat->username}}</p>
+                                    <p class="mt-1"><i class="fas fa-user"></i> @lang('chat_id'): {{ $ichancytr->chat_id }}</p>
                                     <p>
                                         @switch($ichancytr->status)
                                         @case("complete")<i class="far fa-check-circle text-success"></i>@break
                                         @case("requested")<i class="far fa-hourglass text-primary"></i>@break
                                         @default
-                                        @endswitch {{$ichancytr->status}}
+                                        @endswitch {{__($ichancytr->status)}}
                                     </p>
                                     @if ($ichancytr->status=="requested")
                                         <p class="text-center"><a href="{{route('ichancies.exec_ichancy_charge',$ichancytr)}}" class="btn btn-success"><i class="fas fa-play"></i></a></p>
@@ -80,7 +80,7 @@
                         @empty
                             <tr>
                                 <td colspan="8" class="text-center">
-                                    <h3>No chats</h3>
+                                    <h3>@lang('No Transactions')</h3>
                                 </td>
                             </tr>
                         @endforelse

@@ -57,41 +57,13 @@ class ChatController extends Controller
 
 
     public function usergifts(Chat $chat){
-        $gifts = Gift::query()
-        ->where('chat_id', $chat->id)
-        ->orderByRaw("status = 'pending' DESC, created_at DESC")
-        ->paginate(10);
-        $chatId = $chat->id;
-        return view("admin.chat.gifts",compact("gifts","chatId"));
+
+        return view("admin.chat.gifts",compact("chat"));
     }
 
 
     public function userAffiliates(Chat $chat){
-        $affiliates = Affiliate::query()
-        ->where('chat_id', $chat->id)
-        ->orderByRaw("status = 'pending' DESC, created_at DESC")
-        ->paginate(10);
-
-        $totalAffAmount = Affiliate::where('chat_id', $chat->id)
-        ->where('month_at', date('Y-m'))
-        ->where('status','pending')
-        ->sum('affiliate_amount');
-
-        $totalAffCount = Affiliate::where('chat_id', $chat->id)
-        ->where('month_at', date('Y-m'))
-        ->where('status','pending')
-        ->count('affiliate_amount');
-
-        $totalAffAmount_last = Affiliate::where('chat_id', $chat->id)
-        ->where('month_at', date('Y-m', strtotime('last month')))
-        ->where('status','pending')
-        ->sum('affiliate_amount');
-
-        $totalAffCount_last = Affiliate::where('chat_id', $chat->id)
-        ->where('month_at', date('Y-m', strtotime('last month')))
-        ->where('status','pending')
-        ->count('affiliate_amount');
-        return view("admin.chat.userAffiliates",compact("affiliates","totalAffAmount","totalAffCount","totalAffAmount_last","totalAffCount_last"));
+        return view("admin.chat.userAffiliates",compact("chat"));
     }
     /**
      * Store a newly created resource in storage.

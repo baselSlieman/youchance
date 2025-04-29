@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Ichancy as ModelsIchancy;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\App;
 use Livewire\Component;
 use Livewire\WithoutUrlPagination;
 use Livewire\WithPagination;
@@ -17,7 +18,9 @@ class Ichancy extends Component
     public $value = null;
     public function render()
     {
-
+        if(session('locale')!==null){
+            App::setLocale(session('locale'));
+         }
         $ichancies = ModelsIchancy::query()
         ->when($this->search, function ($query) {
             return $query->whereHas('chat', function ($query) {

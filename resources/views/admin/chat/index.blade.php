@@ -8,7 +8,7 @@
 
     <div class="container my-3">
         <div class="row justify-content-center g-2 gx-3">
-            @livewire("chat")
+            @livewire("chats.Chat")
     </div>
     </div>
 
