@@ -7,6 +7,7 @@ use App\Models\Ichancy;
 use App\Models\IchTransaction;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Telegram\Bot\Laravel\Facades\Telegram;
 
 class IchancyController extends Controller
@@ -21,11 +22,15 @@ class IchancyController extends Controller
 
     public function ichancy_transaction(Request $request,$type)
     {
+        if(session('locale')!==null){
+            App::setLocale(session('locale'));
+         }
         $id = $request->get('ichancyid');
         $ichancyTrans = IchTransaction::query();
         if(isset($id)){
             $ichancyTrans->where("ichancy_id",$id);
         }
+
         $ichancyTransRes = $ichancyTrans->where("type",$type)->orderByRaw("status = 'requested' DESC, created_at DESC")->with('ichancy')->paginate(5);
         return view("admin.ichancy.ichancy_transactions",compact('ichancyTransRes','type'));
     }
@@ -173,6 +178,9 @@ class IchancyController extends Controller
      */
     public function edit(Ichancy $ichancy)
     {
+        if(session('locale')!==null){
+            App::setLocale(session('locale'));
+         }
         return view("admin.ichancy.edit",compact('ichancy'));
     }
 

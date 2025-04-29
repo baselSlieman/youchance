@@ -5,7 +5,7 @@
     --dark: #191C24;
 }
 body{
-    font-family: "Heebo" !important;
+    font-family: "Cairo" !important;
 }
 .table>:not(caption)>*>* {
     color: rgba(108, 117, 125, 1) !important;;
@@ -74,7 +74,7 @@ body{
 .sidebar {
     position: fixed;
     top: 0;
-    left: 0;
+    right: 0;
     bottom: 0;
     width: 250px;
     height: 100vh;
@@ -85,7 +85,7 @@ body{
 }
 
 .content {
-    margin-left: 250px;
+    margin-right: 250px;
     min-height: 100vh;
     background: #FFFFFF;
     transition: 0.5s;
@@ -97,7 +97,7 @@ body{
     }
 
     .sidebar.open {
-        margin-left: -250px;
+        margin-right: -250px;
     }
 
     .content {
@@ -106,23 +106,23 @@ body{
 
     .content.open {
         width: 100%;
-        margin-left: 0;
+        margin-right: 0;
     }
 }
 
 @media (max-width: 991.98px) {
     .sidebar {
-        margin-left: -250px;
+        margin-right: -250px;
     }
 
     .sidebar.open {
-        margin-left: 0;
+        margin-right: 0;
         box-shadow: 0pc 3px 30px #c9c9c9;
     }
 
     .content {
         width: 100%;
-        margin-left: 0;
+        margin-right: 0;
     }
 }
 
@@ -132,8 +132,8 @@ body{
     padding: 7px 20px;
     color: var(--dark);
     font-weight: 500;
-    border-left: 3px solid var(--light);
-    border-radius: 0 30px 30px 0;
+    border-right: 3px solid var(--light);
+    border-radius: 30px 0px 0px 30px;
     outline: none;
 }
 
@@ -162,7 +162,7 @@ body{
 .sidebar .navbar .dropdown-toggle::after {
     position: absolute;
     top: 15px;
-    right: 15px;
+    left: 15px;
     border: none;
     content: "\f107";
     font-family: "Font Awesome 5 Free";
@@ -175,15 +175,14 @@ body{
 }
 
 .sidebar .navbar .dropdown-item {
-    padding-left: 25px;
-    border-radius: 0 30px 30px 0;
-
+    padding-right: 25px;
+    border-radius: 30px 0px 0px 30px;
 }
 .dropdown-item.active, .dropdown-item:active{
     color: white !important;
 }
 .content .navbar .navbar-nav .nav-link {
-    margin-left: 25px;
+    margin-right: 25px;
     padding: 12px 0;
     color: var(--dark);
     outline: none;
@@ -221,7 +220,7 @@ body{
 
 @media (max-width: 575.98px) {
     .content .navbar .navbar-nav .nav-link {
-        margin-left: 15px;
+        margin-right: 15px;
     }
 }
 
