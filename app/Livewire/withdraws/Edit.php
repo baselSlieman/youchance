@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Withdraws;
+namespace App\Livewire\withdraws;
 
 use Illuminate\Support\Facades\App;
 use Livewire\Attributes\Validate;

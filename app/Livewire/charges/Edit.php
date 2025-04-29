@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Charges;
+namespace App\Livewire\charges;
 
 use App\Models\Chat;
 use Illuminate\Support\Facades\App;
