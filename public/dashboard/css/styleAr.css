@@ -192,7 +192,7 @@ body{
 .content .navbar .navbar-nav .nav-link.active {
     color: var(--primary);
 }
-
+.nightmode,
 .content .navbar .sidebar-toggler,
 .content .navbar .navbar-nav .nav-link i {
     width: 40px;
@@ -203,7 +203,9 @@ body{
     background: #FFFFFF;
     border-radius: 40px;
 }
-
+.langdrop::after{
+    display: none;
+}
 .content .navbar .dropdown-toggle::after {
     margin-left: 6px;
     vertical-align: middle;

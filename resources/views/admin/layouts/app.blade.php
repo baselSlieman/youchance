@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ session('locale') }}" @if (session('locale')==='ar')
     dir="rtl"
-@endif>
+@endif data-bs-theme="{{session('mode')}}">
 
 <head>
     <meta charset="utf-8">
@@ -32,14 +32,22 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.rtl.min.css" integrity="sha384-q8+l9TmX3RaSz3HKGBmqP2u5MkgeN7HrfOJBLcTgZsQsbrx8WqqxdA5PuwUV9WIx" crossorigin="anonymous">
-        <link href="{{asset('dashboard/css/styleAr.css')}}" rel="stylesheet">
+        @if(session('mode')==='dark')
+        <link id="dark-mode-stylesheet" href="{{asset('dashboard/css/styleAr-dark.css')}}" rel="stylesheet">
+        @else
+        <link id="dark-mode-stylesheet" href="{{asset('dashboard/css/styleAr.css')}}" rel="stylesheet">
+        @endif
     @else
         <!-- Google Web Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
-        <link href="{{asset('dashboard/css/style.css')}}" rel="stylesheet">
+        @if(session('mode')==='dark')
+        <link  id="dark-mode-stylesheet" href="{{asset('dashboard/css/style-dark.css')}}" rel="stylesheet">
+        @else
+        <link  id="dark-mode-stylesheet" href="{{asset('dashboard/css/style.css')}}" rel="stylesheet">
+        @endif
     @endif
     <!-- Template Stylesheet -->
 
@@ -79,7 +87,7 @@
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle show" data-bs-toggle="dropdown"><i class="fab fa-telegram me-2"></i> @lang('Telegram')</a>
                         <div class="dropdown-menu bg-transparent border-0 show">
-                            <a href="{{route('chats.index')}}" class="dropdown-item text-primary-emphasis border-bottom"  wire:navigate wire:current="active  text-light"><i class="fab fa-telegram-plane me-2"></i>@lang('chats')</a>
+                            <a href="{{route('chats.index')}}" class="dropdown-item text-primary-emphasis border-bottom"  wire:current="active  text-light"><i class="fab fa-telegram-plane me-2"></i>@lang('chats')</a>
                             <a href="{{route('charges.index')}}" class="dropdown-item text-primary-emphasis border-bottom" wire:navigate wire:current="active  text-light"><i class="fas fa-download me-2"></i>@lang('Chrges')</a>
                             <a href="{{route('withdraws.index')}}" class="dropdown-item text-primary-emphasis border-bottom" wire:navigate  wire:current="active  text-light"><i class="fas fa-upload me-2"></i>@lang('Withdraws')</a>
                             <a href="{{route('ichancies.index')}}" class="dropdown-item text-primary-emphasis border-bottom" wire:navigate  wire:current="active  text-light"><i class="fas fa-rocket me-2"></i>@lang('Ichancy')</a>
@@ -117,8 +125,10 @@
             <input class="form-control border-0" type="search" placeholder="@lang('Search')">
         </form>
         <div class="navbar-nav align-items-center ms-auto">
-
+                @livewire('night')
                 @livewire('language')
+
+
 
 
             {{-- <div class="nav-item dropdown">
@@ -224,7 +234,11 @@
     <script src="{{asset('dashboard/js/main.js')}}"></script>
 
     @livewireScripts
-
+    <script>
+        window.addEventListener('change-theme',(event)=>{
+            window.location.reload();
+        });
+    </script>
 </body>
 
 </html>

@@ -155,5 +155,6 @@
     "Updating the customer's balance has failed.":"فشلت عملية تحديث محفظة المستخدم",
     "The order has been successfully rejected":"تم رفض الطلب بنجاح",
     "Updating withdraw status has failed":"فشل تعديل عملية السحب",
-    "Withdraw updated":"تم تعديل عملية السحب بنجاح"
+    "Withdraw updated":"تم تعديل عملية السحب بنجاح",
+    "Users Balance":"محفظة المستخدمين"
 }

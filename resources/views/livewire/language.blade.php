@@ -8,8 +8,8 @@
 
 
 <div class="nav-item dropdown">
-    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
-        <i class="fas fa-globe"></i> @lang(App::currentLocale())
+    <a href="#" class="nav-link dropdown-toggle langdrop" data-bs-toggle="dropdown">
+        <i class="fas fa-globe"></i> <span class="d-none d-md-inline">@lang(App::currentLocale())</span>
     </a>
     <div class="dropdown-menu dropdown-menu-end bg-light border-0 rounded-0 rounded-bottom m-0" style="box-shadow: 0pc 3px 3px #c9c9c9;">
         <a href="#" class="dropdown-item" wire:click="english">
